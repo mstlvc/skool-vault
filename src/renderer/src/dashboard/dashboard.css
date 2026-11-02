@@ -1,0 +1,134 @@
+@import 'tailwindcss';
+@source './';
+@source '../common';
+/* only our own themes below (the built-in light/dark would otherwise win) */
+@plugin 'daisyui' {
+  themes: false;
+}
+
+/* Archive storage: paper, grey-blue box board, blue-black ink. No yellow. */
+@plugin 'daisyui/theme' {
+  name: 'vault';
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+  --color-base-100: #f7f8f9; /* paper: content */
+  --color-base-200: #e3e8ec; /* archive board: sidebar */
+  --color-base-300: #cdd5dc; /* board edge: lines */
+  --color-base-content: #1e2a38; /* ink */
+  --color-primary: #1e2a38;
+  --color-primary-content: #f7f8f9;
+  --color-secondary: #6b7a89; /* slate: secondary text */
+  --color-secondary-content: #ffffff;
+  --color-accent: #2f7d5b;
+  --color-accent-content: #ffffff;
+  --color-neutral: #2b3847; /* selected sidebar item */
+  --color-neutral-content: #f7f8f9;
+  --color-info: #3b6ea5;
+  --color-info-content: #ffffff;
+  --color-success: #2f7d5b;
+  --color-success-content: #ffffff;
+  --color-warning: #b7791f;
+  --color-warning-content: #ffffff;
+  --color-error: #d64545; /* record red */
+  --color-error-content: #ffffff;
+  --radius-selector: 0.25rem;
+  --radius-field: 0.375rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+/* Same structure in neutral charcoal (no navy tint). */
+@plugin 'daisyui/theme' {
+  name: 'vault-dark';
+  default: false;
+  prefersdark: true;
+  color-scheme: dark;
+  --color-base-100: #1b1c1f; /* content */
+  --color-base-200: #232428; /* sidebar */
+  --color-base-300: #35373c; /* lines */
+  --color-base-content: #e6e7e9;
+  --color-primary: #e6e7e9;
+  --color-primary-content: #1b1c1f;
+  --color-secondary: #8e9197;
+  --color-secondary-content: #1b1c1f;
+  --color-accent: #4fae84;
+  --color-accent-content: #0d1a13;
+  --color-neutral: #3a3c42;
+  --color-neutral-content: #f1f2f3;
+  --color-info: #7aa7dc;
+  --color-info-content: #0d1520;
+  --color-success: #4fae84;
+  --color-success-content: #0d1a13;
+  --color-warning: #d9a03f;
+  --color-warning-content: #1f1600;
+  --color-error: #e86161;
+  --color-error-content: #1a0505;
+  --radius-selector: 0.25rem;
+  --radius-field: 0.375rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@theme {
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-label: 'IBM Plex Sans Condensed', 'IBM Plex Sans', system-ui, sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  @apply bg-base-100 text-base-content font-sans antialiased;
+  overflow: hidden;
+}
+
+/* The one loud element: the community name, set like a printed archive-box label. */
+.label-type {
+  font-family: var(--font-label);
+  font-weight: 700;
+  font-size: clamp(2rem, 3.2vw, 2.75rem);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+}
+.label-type-sm {
+  font-family: var(--font-label);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+/* Recording dot: the only ambient motion, shown while a download runs. */
+.rec {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 9999px;
+  background: var(--color-error);
+  animation: rec 1.6s ease-in-out infinite;
+  flex: none;
+}
+@keyframes rec {
+  50% {
+    opacity: 0.25;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rec {
+    animation: none;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-info);
+  outline-offset: 2px;
+}

@@ -1,0 +1,45 @@
+/* App-drawn title bar pieces, shared by the dashboard and the viewer. */
+.drag {
+  -webkit-app-region: drag;
+  user-select: none;
+}
+.no-drag,
+.drag button,
+.drag a,
+.drag input,
+.drag select,
+.drag [role='button'] {
+  -webkit-app-region: no-drag;
+}
+
+.wc {
+  display: flex;
+  align-self: stretch;
+  flex: none;
+}
+.wc-btn {
+  width: 46px;
+  display: grid;
+  place-items: center;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  cursor: default;
+  opacity: 0.8;
+  transition: background-color 0.12s;
+}
+.wc-btn:hover {
+  opacity: 1;
+  background: rgba(127, 127, 127, 0.16);
+}
+.wc-btn:active {
+  background: rgba(127, 127, 127, 0.26);
+}
+.wc-close:hover {
+  background: #c42b1c;
+  color: #fff;
+}
+.wc-close:active {
+  background: #a52318;
+  color: #fff;
+}

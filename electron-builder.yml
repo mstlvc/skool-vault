@@ -1,0 +1,33 @@
+appId: app.skoolvault
+productName: Skool Vault
+copyright: Personal backup tool
+directories:
+  output: release
+  buildResources: build
+files:
+  - out/**
+  - package.json
+asarUnpack:
+  - node_modules/ffmpeg-static/**
+  - out/main/chunks/*.png
+win:
+  icon: build/icon.ico
+  target: [nsis, portable]
+  artifactName: Skool-Vault-${version}-${arch}-${target}.${ext}
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Skool Vault
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  artifactName: Skool-Vault-Setup-${version}.${ext}
+portable:
+  artifactName: Skool-Vault-${version}-portable.${ext}
+mac:
+  icon: build/icon.png
+  target: [dmg]
+linux:
+  icon: build/icon.png
+  target: [AppImage]
