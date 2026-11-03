@@ -1186,3 +1186,33 @@ img {
   z-index: 120;
   color: var(--text);
 }
+
+/* ---------- start page (pick a community): no top bar */
+.home-page {
+  padding-top: 64px;
+}
+.home-corner {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  z-index: 20;
+}
+.home-drag {
+  display: none;
+}
+/* in the app window: a thin invisible strip still drags the window, buttons sit left of the window controls */
+.in-app .home-drag {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  z-index: 10;
+  -webkit-app-region: drag;
+}
+.in-app .home-corner {
+  top: 1px;
+  right: 150px;
+  -webkit-app-region: no-drag;
+}

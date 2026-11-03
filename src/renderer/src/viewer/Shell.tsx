@@ -45,17 +45,10 @@ function Home({ themeBtn }: { themeBtn: React.ReactNode }) {
   }, [lib])
   return (
     <>
-      <header className="topbar" onDoubleClick={maximizeOnDoubleClick}>
-        <div className="topbar-inner">
-          <div className="brand">
-            <span className="brand-mark">SV</span> Skool Vault
-          </div>
-          <span className="spacer" />
-          {themeBtn}
-        </div>
-      </header>
-      <main className="page">
-        <h1 className="page-title">Your archived communities</h1>
+      {/* no top bar here: just the communities and a theme button in the corner */}
+      <div className="home-drag" onDoubleClick={maximizeOnDoubleClick} />
+      <div className="home-corner">{themeBtn}</div>
+      <main className="page home-page">
         {err && <Empty title="Can't reach the Skool Vault app">Make sure the app is running. ({err})</Empty>}
         {lib && !lib.length && <Empty title="Nothing downloaded yet">Use the Skool Vault app to download a community.</Empty>}
         <div className="course-grid">
