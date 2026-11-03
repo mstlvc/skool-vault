@@ -1,4 +1,4 @@
-import { clipboard, contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 import type { Account, DownloadOptions, JobState, LibraryEntry, RemoteGroup, RemoteState, ScanResult, Settings } from '../shared/types'
 import { windowApi } from './window'
 
@@ -38,7 +38,8 @@ const api = {
       ipcRenderer.removeListener('remote', fn)
     }
   },
-  copy: (text: string) => clipboard.writeText(text)
+  // Electron 45 no longer gives preload scripts the clipboard, so the main process writes it
+  copy: (text: string) => ipcRenderer.invoke('clipboard:write', text) as Promise<boolean>
 }
 
 export type VaultApi = typeof api

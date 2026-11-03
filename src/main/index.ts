@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, nativeTheme, shell } from 'electron'
+import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeTheme, shell } from 'electron'
 import appIcon from '../../build/icon.png?asset'
 import { join } from 'path'
 import type { Account, DownloadOptions, JobState, Settings } from '../shared/types'
@@ -89,6 +89,14 @@ function registerIpc() {
   })
   ipcMain.handle('win:close', (e) => win(e)?.close())
   ipcMain.handle('win:isMaximized', (e) => !!win(e)?.isMaximized())
+
+  // "Copy link" and friends: the clipboard is only reliably available in the main process
+  // (the clipboard API is async in Electron 45, hence the awaits)
+  ipcMain.handle('clipboard:write', async (_e, text: unknown) => {
+    const value = String(text ?? '')
+    await clipboard.writeText(value)
+    return (await clipboard.readText()) === value
+  })
 
   ipcMain.handle('account:get', () => account())
   ipcMain.handle('account:login', async () => {

@@ -648,10 +648,14 @@ function PhoneShare({ remote, setRemote }: { remote: RemoteState; setRemote: (r:
   const [copied, setCopied] = useState('')
   const on = remote.status === 'on' || remote.status === 'starting'
   const lan = remote.lanUrls || []
-  const copy = (t: string) => {
-    vault.copy(t)
-    setCopied(t)
-    setTimeout(() => setCopied(''), 1500)
+  const [copyFailed, setCopyFailed] = useState('')
+  // say "Copied" only when it really was: the app's clipboard first, the browser's as a backup
+  const copy = async (t: string) => {
+    let ok = await vault.copy(t).catch(() => false)
+    if (!ok) ok = await navigator.clipboard.writeText(t).then(() => true, () => false)
+    setCopied(ok ? t : '')
+    setCopyFailed(ok ? '' : t)
+    setTimeout(() => (setCopied(''), setCopyFailed('')), 2000)
   }
   const linkRow = (url: string, label: string) => (
     <div key={url} className="flex min-w-0 items-center gap-3 text-sm">
@@ -660,7 +664,7 @@ function PhoneShare({ remote, setRemote }: { remote: RemoteState; setRemote: (r:
         {url}
       </span>
       <button className="link link-hover flex-none" onClick={() => copy(url)}>
-        {copied === url ? 'Copied' : 'Copy link'}
+        {copied === url ? 'Copied' : copyFailed === url ? "Couldn't copy" : 'Copy link'}
       </button>
     </div>
   )
