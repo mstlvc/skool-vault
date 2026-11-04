@@ -1,7 +1,7 @@
 {
   "name": "skool-vault",
   "productName": "Skool Vault",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Download the Skool communities you belong to and browse them offline.",
   "main": "./out/main/index.js",
   "private": true,
