@@ -2,7 +2,7 @@
   "name": "skool-vault",
   "productName": "Skool Vault",
   "version": "1.0.2",
-  "description": "Download everything you have access to in your Skool communities and browse it offline.",
+  "description": "Download the Skool communities you belong to and browse them offline.",
   "main": "./out/main/index.js",
   "private": true,
   "scripts": {
@@ -14,6 +14,7 @@
     "dist:mac": "electron-vite build && electron-builder --mac",
     "dist:linux": "electron-vite build && electron-builder --linux",
     "fixture": "rolldown scripts/make-fixture.ts --format cjs --platform node --external ffmpeg-static --external electron -o out-scripts/make-fixture.js && node out-scripts/make-fixture.js test-library",
+    "demo": "node scripts/make-demo.mjs",
     "icon": "python scripts/make-icon.py"
   },
   "dependencies": {

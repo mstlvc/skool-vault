@@ -3,13 +3,17 @@ import { appendFileSync, existsSync, mkdirSync } from 'fs'
 import { join, relative, extname } from 'path'
 import type {
   Attachment, Category, Comment, Course, DownloadOptions, GroupArchive, JobState, Lesson, Person,
-  Post, RemoteGroup, ScanCourse, ScanResult, Section, VideoRef
+  Post, RemoteGroup, ScanCourse, ScanResult, ScanSection, Section, VideoRef
 } from '../shared/types'
+import { outlineOf } from '../shared/outline'
 import { groupDir, loadGroup, writeJson } from './archive'
 import { downloadVideo, existingCaptions, existingVideo } from './media'
 import { imageUrls, toHtml, toText } from './richtext'
 import { getSettings, speedProfile } from './settings'
-import { BASE, PageLoader, deepFind, fetchText, fetchToFile, parseJson, urlFromApi, writeCookieFile } from './skool'
+import { BASE, PageLoader, deepFind, fetchText, fetchToFile, loomShareUrl, parseJson, urlFromApi, writeCookieFile } from './skool'
+
+/** Bumped when lesson handling improves, so "only new" re-checks lessons saved by older versions once. */
+const LESSON_REV = 2
 
 // ------------------------------------------------------------------ helpers
 
@@ -81,6 +85,15 @@ export async function scanGroup(loader: PageLoader, slug: string): Promise<ScanR
   }
 }
 
+/** Lesson titles for one course, read from Skool without downloading it. */
+export async function courseOutline(loader: PageLoader, groupSlug: string, courseSlug: string): Promise<ScanSection[]> {
+  if (!groupSlug || !courseSlug) throw new Error('Missing course')
+  const pp = pageProps(await loader.nextData(`${BASE}/${groupSlug}/classroom/${courseSlug}`))
+  if (!pp.self) throw new Error('Not logged in (or the session expired). Log in again.')
+  if (!pp.course) throw new Error('Skool did not return this course.')
+  return outlineOf(pp.course)
+}
+
 // ------------------------------------------------------------------ job
 
 type Emit = (s: JobState) => void
@@ -108,10 +121,24 @@ export class DownloadJob {
   private idle: (() => void)[] = []
   private cookieFile: string
   private linkedPosts = new Set<string>()
+  /** Post slugs we already tried to fetch because something linked to them. */
+  private linkAttempts = new Set<string>()
+  /** One archive merge at a time. Parallel post downloads used to drop each other's posts. */
+  private postChain: Promise<void> = Promise.resolve()
+  private filledLessons = 0 // slim lessons completed from Skool's course data
+  /** Lesson recordings that live on a pinned community post (slug -> where the lesson video should go). */
+  private recordingLessons = new Map<string, { lessonId: string; folder: string; stem: string }>()
+  /** Video refs already handed to the download queue, so a lesson and its post don't download the same file twice. */
+  private enqueuedTargets = new WeakSet<VideoRef>()
+  /** Lessons the user left unchecked. They are not downloaded or updated. */
+  private skipLessons: Set<string>
+  /** Why the last playback-token request produced no link. Appended to the lesson warning. */
+  private playbackNote = ''
 
   constructor(private loader: PageLoader, private opts: DownloadOptions, private emitFn: Emit) {
     this.dir = groupDir(opts.slug)
     this.cookieFile = join(this.dir, '.cookies.txt')
+    this.skipLessons = new Set(opts.skipLessons || [])
     this.state = {
       id: `${opts.slug}-${Date.now()}`,
       slug: opts.slug,
@@ -162,6 +189,47 @@ export class DownloadJob {
 
   private check() {
     if (this.abort.signal.aborted) throw new Error('cancelled')
+  }
+
+  // ---------------- pause / resume
+  private paused = false
+  private resumeWaiters: (() => void)[] = []
+  private phaseBeforePause = ''
+  /** Running video downloads, each stoppable on its own (pause stops them and queues them again). */
+  private taskAborts = new Map<string, AbortController>()
+  private interrupted = new Set<string>()
+
+  /** Checkpoint between steps: stops here while paused, throws if the job was stopped. */
+  private async gate() {
+    this.check()
+    while (this.paused) await new Promise<void>((r) => this.resumeWaiters.push(r))
+    this.check()
+  }
+
+  pause() {
+    if (this.state.status !== 'running' || this.paused) return
+    this.paused = true
+    this.phaseBeforePause = this.state.phase
+    this.state.paused = true
+    this.state.phase = 'Paused'
+    // stop the videos in progress; they go back to the front of the queue and start over on resume
+    for (const [key, ctrl] of this.taskAborts) {
+      this.interrupted.add(key)
+      ctrl.abort()
+    }
+    this.log('paused')
+    this.emit(true)
+  }
+
+  resume() {
+    if (!this.paused) return
+    this.paused = false
+    this.state.paused = false
+    this.state.phase = this.phaseBeforePause || this.state.phase
+    this.log('resumed')
+    this.resumeWaiters.splice(0).forEach((r) => r())
+    this.pump()
+    this.emit(true)
   }
 
   private save(now = false) {
@@ -289,6 +357,8 @@ export class DownloadJob {
 
   // ---------------- video queue
   private enqueue(t: VideoTask) {
+    if (this.enqueuedTargets.has(t.target)) return
+    this.enqueuedTargets.add(t.target)
     const existing = existingVideo(t.dir, t.stem)
     if (existing) {
       t.target.file = this.rel(existing)
@@ -303,12 +373,14 @@ export class DownloadJob {
 
   private pump() {
     const max = speedProfile().videos
-    while (this.active < max && this.queue.length && !this.abort.signal.aborted) {
+    while (this.active < max && this.queue.length && !this.abort.signal.aborted && !this.paused) {
       const t = this.queue.shift()!
       this.active++
-      this.runVideo(t).finally(() => {
+      this.runVideo(t).then((outcome) => {
         this.active--
-        this.state.videosDone++
+        // a paused video goes back to the front of the queue; anything else counts as handled
+        if (outcome === 'paused') this.queue.unshift(t)
+        else this.state.videosDone++
         this.state.videos = this.state.videos.filter((v) => v.key !== t.key)
         this.emit()
         this.save()
@@ -326,10 +398,29 @@ export class DownloadJob {
     })
   }
 
-  private async runVideo(t: VideoTask) {
+  private async runVideo(t: VideoTask): Promise<'done' | 'paused' | 'stopped'> {
+    const ctrl = new AbortController()
+    const stopAll = () => ctrl.abort()
+    this.abort.signal.addEventListener('abort', stopAll, { once: true })
+    this.taskAborts.set(t.key, ctrl)
+    try {
+      return await this.runVideoOnce(t, ctrl.signal)
+    } finally {
+      this.abort.signal.removeEventListener('abort', stopAll)
+      this.taskAborts.delete(t.key)
+    }
+  }
+
+  private async runVideoOnce(t: VideoTask, signal: AbortSignal): Promise<'done' | 'paused' | 'stopped'> {
     const prog = { key: t.key, label: t.label, pct: 0 as number, speed: '' as string | undefined }
     this.state.videos = [...this.state.videos, prog]
     let url = t.url
+    // when stopped by pause or Stop, say which so the queue can react
+    const why = () => {
+      if (this.abort.signal.aborted) return 'stopped' as const
+      if (this.interrupted.delete(t.key)) return 'paused' as const
+      return null
+    }
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         const file = await downloadVideo({
@@ -339,7 +430,7 @@ export class DownloadJob {
           maxHeight: getSettings().maxHeight,
           cookieFile: this.cookieFile,
           durationMs: t.durationMs,
-          signal: this.abort.signal,
+          signal,
           log: (s) => this.log(s),
           onProgress: (pct, speed) => {
             prog.pct = pct
@@ -352,9 +443,9 @@ export class DownloadJob {
         if (cap) t.target.captions = this.rel(cap)
         delete t.target.error
         this.log(`✓ video saved: ${t.label}`)
-        return
+        return 'done'
       } catch (e: any) {
-        if (this.abort.signal.aborted) return
+        if (signal.aborted) return why() || 'stopped'
         // Same Mux playback id is also served from Mux's own host.
         if (/\/\/stream\.video\.skool\.com\//.test(url)) {
           url = url.replace('//stream.video.skool.com/', '//stream.mux.com/')
@@ -367,14 +458,16 @@ export class DownloadJob {
           const fresh = await t.refresh().catch(() => null)
           if (fresh) {
             url = fresh
+            t.target.source = fresh
             continue
           }
         }
         t.target.error = e.message
         this.fail(`video failed: ${t.label} — ${e.message}`)
-        return
+        return 'done'
       }
     }
+    return 'done'
   }
 
   // ---------------- main
@@ -414,7 +507,7 @@ export class DownloadJob {
 
       // classroom keeps Skool's course order; replace downloaded courses, keep others from earlier runs
       for (const [i, c] of selected.entries()) {
-        this.check()
+        await this.gate()
         const idx = courses.findIndex((x) => x.id === c.id) + 1
         const course = await this.course(c, idx)
         const list = this.archive.classroom.courses.filter((x) => x.id !== course.id)
@@ -427,24 +520,35 @@ export class DownloadJob {
       }
 
       if (o.community) {
-        this.check()
+        await this.gate()
         await this.community(g)
       }
 
-      // posts that lessons link to (Skool shows them as embedded post cards)
-      const have = new Set(this.archive.community.posts.map((p) => p.slug))
-      const missing = [...this.linkedPosts].filter((s) => !have.has(s))
-      if (missing.length) {
-        this.state.phase = 'Posts linked from lessons'
+      // Posts a lesson or another post links to. A few rounds, so a post that links to a post is saved too.
+      for (let round = 0; round < 5; round++) {
+        for (const p of this.archive.community.posts) {
+          this.noteLinks(p.html)
+          this.noteTree(p.comments)
+        }
+        const have = new Set(
+          this.archive.community.posts.filter((p) => this.linkSaved(p)).map((p) => p.slug.toLowerCase())
+        )
+        const missing = [...this.linkedPosts].filter((s) => !have.has(s) && !this.linkAttempts.has(s))
+        if (!missing.length) break
+        for (const s of missing) this.linkAttempts.add(s)
+        this.state.phase = round ? 'Posts linked from posts' : 'Posts linked from lessons'
+        this.log(`posts linked from the classroom or community: ${missing.length} to download`)
         this.state.total += missing.length
         this.emit(true)
         await this.pool(missing, speedProfile().posts, async (s) => {
-          this.check()
+          await this.gate()
           await this.fetchPost(s, true, g.id)
           this.state.done++
           this.emit()
         })
       }
+
+      await this.attachRecordings(g.id)
 
       if (this.active || this.queue.length) {
         this.state.phase = 'Finishing video downloads'
@@ -452,16 +556,27 @@ export class DownloadJob {
         this.emit(true)
         await this.videosIdle()
       }
-      this.check()
+      await this.gate()
       this.save(true)
+      if (this.filledLessons) this.log(`${this.filledLessons} lessons were completed from Skool's course data`)
       this.state.status = 'done'
       this.state.phase = this.state.errors.length ? `Finished with ${this.state.errors.length} issue(s)` : 'Finished'
       this.state.current = ''
     } catch (e: any) {
       if (this.archive) this.save(true)
-      this.state.status = this.abort.signal.aborted ? 'cancelled' : 'error'
-      this.state.phase = this.abort.signal.aborted ? 'Cancelled' : `Error: ${e.message}`
-      if (!this.abort.signal.aborted) this.log('✗ ' + e.message)
+      const cancelled = this.abort.signal.aborted || e?.message === 'cancelled'
+      if (!cancelled) this.log('✗ ' + e.message)
+      // Videos already queued keep their files. Finish them before the job is marked stopped.
+      if (!cancelled && (this.active || this.queue.length)) {
+        this.state.phase = 'Finishing video downloads'
+        this.state.current = ''
+        this.emit(true)
+        await this.videosIdle()
+        if (this.archive) this.save(true)
+      }
+      this.state.status = cancelled ? 'cancelled' : 'error'
+      this.state.phase = cancelled ? 'Cancelled' : `Error: ${e.message}`
+      this.state.current = ''
     }
     this.emit(true)
   }
@@ -469,6 +584,10 @@ export class DownloadJob {
   cancel() {
     this.abort.abort()
     this.queue = []
+    // a paused job is waiting at a checkpoint: let it continue so it can end as "Cancelled"
+    this.paused = false
+    this.state.paused = false
+    this.resumeWaiters.splice(0).forEach((r) => r())
     this.pump()
   }
 
@@ -491,7 +610,7 @@ export class DownloadJob {
     const walk = async (node: any): Promise<(Section | Lesson)[]> => {
       const items: (Section | Lesson)[] = []
       for (const ch of node?.children || []) {
-        this.check()
+        await this.gate()
         const u = ch.course || {}
         if (u.unitType === 'set') {
           const sub = (await walk(ch)).flatMap((x) => (x.type === 'set' ? x.items : [x]))
@@ -499,12 +618,43 @@ export class DownloadJob {
         } else if (u.unitType === 'module') {
           n++
           const prev = prevLessons.get(u.id)
-          if (this.opts.onlyNew && prev && this.lessonComplete(prev) && (prev.title === (u.metadata?.title || prev.title))) {
+          if (this.skipLessons.has(u.id)) {
+            // Leave this lesson out. Keep a copy that is already on disk, and do not update it.
+            this.log(`skipped: ${u.metadata?.title || prev?.title || `Lesson ${n}`}`)
+            this.state.done++
+            if (prev) items.push({ ...prev, n })
+            else n--
+            this.emit()
+            continue
+          }
+          const sameTitle = prev && prev.title === (u.metadata?.title || prev.title)
+          if (this.opts.onlyNew && prev && sameTitle && this.lessonComplete(prev)) {
             // already fully saved: keep it, but still archive the posts it links to
-            for (const s of [...(prev.posts || []), ...postLinks(prev.html, this.opts.slug)]) this.linkedPosts.add(s)
+            for (const s of prev.posts || []) this.notePost(s)
+            this.noteLinks(prev.html)
             this.state.done++
             items.push({ ...prev, n })
-          } else items.push(await this.lesson(c.name, folder, u, n))
+          } else if (this.opts.onlyNew && prev && sameTitle && !prev.video && this.queueRecording(prev, folder, n)) {
+            // The lesson has no video of its own; the last run already saved the pinned post that holds it.
+            for (const s of prev.posts || []) this.notePost(s)
+            this.noteLinks(prev.html)
+            this.state.done++
+            items.push({ ...prev, n })
+          } else {
+            try {
+              items.push(await this.lesson(c.name, c.id, folder, u, n))
+            } catch (e: any) {
+              if (this.abort.signal.aborted || e?.message === 'cancelled') throw e
+              if (!String(e?.message || '').includes('Could not load ')) throw e
+              const name = u.metadata?.title || prev?.title || `Lesson ${n}`
+              // Keep a copy already on disk. The next update opens this lesson again.
+              this.fail(`lesson page did not load; it will be tried again on the next update: ${name} — ${e.message}`)
+              this.state.done++
+              if (prev) items.push({ ...prev, n })
+              else items.push({ type: 'lesson', id: u.id, n, title: name, html: '', resources: [], videoMissing: true })
+              this.emit()
+            }
+          }
         } else if (ch.children?.length) {
           items.push(...(await walk(ch)))
         }
@@ -526,6 +676,8 @@ export class DownloadJob {
   /** A saved lesson needs no re-download when its video and files are on disk and attached posts were recorded. */
   private lessonComplete(l: Lesson): boolean {
     if (l.posts === undefined) return false // saved before attached-post support
+    if ((l.rev ?? 0) < LESSON_REV) return false // saved by an older version: check once more
+    if (l.videoMissing) return false // try the video again
     if (l.video && this.opts.videos && !l.video.file) return false
     if (l.video?.file && !existsSync(join(this.dir, l.video.file))) return false
     return l.resources.every((r) => (r.file ? existsSync(join(this.dir, r.file)) : !!r.href))
@@ -542,6 +694,93 @@ export class DownloadJob {
     return p.attachments.every((a) => !!a.file)
   }
 
+  /**
+   * A lesson link still needs a download when the post on disk has no comments yet,
+   * or its video file is missing. Posts filled from a lesson page look like this
+   * until the linked-post pass fetches them.
+   */
+  private linkSaved(p: Post): boolean {
+    if (this.opts.comments && p.commentCount > 0 && p.syncedComments == null) return false
+    if (this.opts.postVideos && p.videos.some((v) => !v.file)) return false
+    return true
+  }
+
+  /** A saved lesson whose video is a pinned post we already have. Skips opening the lesson page again. */
+  private queueRecording(prev: Lesson, folder: string, n: number): boolean {
+    const hit = (prev.posts || [])
+      .map((s) => this.archive.community.posts.find((p) => p.slug === s))
+      .find((p) => p?.videos.some((v) => v.source))
+    if (!hit) return false
+    this.recordingLessons.set(hit.slug, { lessonId: prev.id, folder, stem: `${pad(n)} - ${safeName(prev.title)}` })
+    return true
+  }
+
+  private findLesson(id: string): Lesson | null {
+    const walk = (items: (Section | Lesson)[]): Lesson | null => {
+      for (const it of items) {
+        if (it.type === 'set') {
+          const hit = walk(it.items)
+          if (hit) return hit
+        } else if (it.id === id) return it
+      }
+      return null
+    }
+    for (const c of this.archive?.classroom.courses || []) {
+      const hit = walk(c.items)
+      if (hit) return hit
+    }
+    return null
+  }
+
+  /** Point the lesson at its pinned post's video and download that file once. */
+  private attachRecording(slug: string, videos: VideoRef[], pageUrl: string) {
+    const key = [...this.recordingLessons.keys()].find((k) => k.toLowerCase() === slug.toLowerCase())
+    const rec = key ? this.recordingLessons.get(key) : undefined
+    if (!rec || !key) return
+    const lesson = this.findLesson(rec.lessonId)
+    const v = videos.find((x) => x.source)
+    if (!lesson || !v) return
+    lesson.video = v
+    lesson.videoMissing = false
+    this.recordingLessons.delete(key)
+    if (this.opts.videos && !v.file) {
+      this.enqueue({
+        key: `lesson-recording:${rec.lessonId}`,
+        label: lesson.title,
+        url: v.source,
+        dir: join(this.dir, 'videos', rec.folder),
+        stem: rec.stem,
+        durationMs: v.durationMs,
+        target: v,
+        refresh: async () =>
+          this.loader.withPage(pageUrl, async (nd) => {
+            const fresh = (pageProps(nd).postTree?.videos || [])[0]
+            const tok = playbackJwt(fresh?.playbackToken)
+            if (fresh?.playbackId && tok) return `https://stream.video.skool.com/${fresh.playbackId}.m3u8?token=${tok}`
+            return fresh?.id ? this.playbackFromTokens(String(fresh.id), fresh.playbackId ? String(fresh.playbackId) : undefined) : null
+          })
+      })
+    }
+    this.log(`✓ video is on the attached post: ${lesson.title}`)
+  }
+
+  /** Lessons recorded only as a pinned post: use the post we already saved, or fetch it now. */
+  private async attachRecordings(groupId: string) {
+    for (const slug of [...this.recordingLessons.keys()]) {
+      const post = this.archive.community.posts.find((p) => p.slug.toLowerCase() === slug.toLowerCase())
+      if (post?.videos.some((v) => v.source)) this.attachRecording(slug, post.videos, `${BASE}/${this.opts.slug}/${slug}`)
+      else await this.fetchPost(slug, true, groupId)
+      if (this.recordingLessons.has(slug)) {
+        const lesson = this.findLesson(this.recordingLessons.get(slug)!.lessonId)
+        if (lesson) {
+          lesson.videoMissing = true
+          this.fail(`no video link in Skool's data (the creator may have removed the video): ${lesson.title}`)
+        }
+        this.recordingLessons.delete(slug)
+      }
+    }
+  }
+
   private findStream(pp: any, meta: any): string | null {
     // Skool-hosted video: a {playbackId, playbackToken} object, ideally the one matching this lesson's videoId
     const scoped: any = {}
@@ -552,11 +791,81 @@ export class DownloadJob {
     const pick = found.find((p) => vid && [p.id, p.videoId, p.video_id].map(String).includes(vid)) || found[0]
     if (pick) {
       const id = pick.playbackId || pick.playback_id
-      const tok = pick.playbackToken || pick.playback_token || pick.token
-      return `https://stream.video.skool.com/${id}.m3u8${tok ? `?token=${tok}` : ''}`
+      const tok = playbackJwt(pick.playbackToken || pick.playback_token || pick.token)
+      // A playback id with no playback JWT is refused by Mux (403). Ask for the token instead of saving that link.
+      if (id && tok) return `https://stream.video.skool.com/${id}.m3u8?token=${tok}`
     }
     const link = String(meta.videoLink || meta.video_link || '').trim()
-    return /^https?:/.test(link) ? link : null
+    if (/^https?:/.test(link)) return loomShareUrl(link) || link
+    // Some courses only carry a Loom thumbnail; its address contains the Loom video id
+    return loomShareUrl(meta.videoThumbnail || meta.video_thumbnail)
+  }
+
+  /**
+   * Some lesson pages include playbackId, thumbnailToken and expire, and leave out playbackToken.
+   * Skool's player then POSTs /videos/:id/tokens. Call while owning the tab.
+   * An in-page 401 leaves the session cookie off, so the next try sends that cookie and no Bearer header.
+   */
+  private async playbackFromTokens(videoId: string, playbackId?: string): Promise<string | null> {
+    this.playbackNote = ''
+    if (!/^[0-9a-f-]{16,}$/i.test(videoId)) return null
+    const path = `/videos/${videoId}/tokens`
+    const tried: { status: number; text: string }[] = []
+    const take = (r: { status: number; text: string }) => {
+      tried.push(r)
+      return playbackUrl(r, playbackId)
+    }
+    // Skool posts this with cookies only, and attaches the page's one-shot x-sk-sec nonce
+    // only after that call comes back without a playback JWT. A 401 is not that case.
+    let url = take(await this.loader.apiInPage(path, 'POST'))
+    const first = tried[0]
+    if (!url && first.status !== 0 && first.status !== 401) {
+      const nonce = await this.loader.pageSecurityNonce()
+      if (nonce) url = take(await this.loader.apiInPage(path, 'POST', { 'x-sk-sec': nonce }))
+    }
+    if (!url) {
+      try {
+        const session = await fetchText(`https://api2.skool.com${path}`, { method: 'POST' }, 'cookie')
+        url = take(session)
+        // GET /videos/:id is the owner's status poll ("only owner can read status").
+        // Members fill a missing playback token with POST /videos/:id/request-data.
+        if (!url && session.status >= 400) {
+          const dataPath = `/videos/${videoId}/request-data`
+          const data = await this.loader.apiInPage(dataPath, 'POST')
+          url = take(data)
+          if (!url && data.status >= 400) url = take(await fetchText(`https://api2.skool.com${dataPath}`, { method: 'POST' }, 'cookie'))
+        }
+      } catch {
+        /* the in-page result is still the one to report */
+      }
+    }
+    if (!url) this.playbackNote = ` (${playbackFailureNotes(tried)})`
+    return url
+  }
+
+  /** Signed Skool/Mux link from the page, or a fresh one from /videos/:id/tokens when the page omitted it. */
+  private async streamFor(pp: any, meta: any): Promise<string | null> {
+    this.playbackNote = ''
+    const direct = this.findStream(pp, meta)
+    if (direct) return direct
+    const pageVideo = pp?.video && typeof pp.video === 'object' ? pp.video : null
+    const vid = String(pageVideo?.id || meta?.videoId || meta?.video_id || '')
+    if (pageVideo?.playbackId && !playbackJwt(pageVideo.playbackToken) && vid) {
+      if (courseLockNote(pp)) return null
+      return this.playbackFromTokens(vid, String(pageVideo.playbackId))
+    }
+    return null
+  }
+
+  /** Skool's full course data (GET /courses/:id, as its lesson page uses), fetched once per course. */
+  private courseData = new Map<string, Promise<any>>()
+  private courseFromApi(courseId: string): Promise<any> {
+    if (!this.courseData.has(courseId))
+      this.courseData.set(
+        courseId,
+        this.loader.apiInPage(`/courses/${courseId}`).then((r) => (r.status < 400 ? camelize(parseJson(r.text)) : null))
+      )
+    return this.courseData.get(courseId)!
   }
 
   /** Lesson resources come in a few shapes: {title, link}, {file_id, file_name}, or {file: {metadata: {read_url}}}. */
@@ -606,7 +915,7 @@ export class DownloadJob {
     return onPage ? this.loader.clickDownload(r.name, dest) : false
   }
 
-  private async lesson(courseSlug: string, folder: string, unit: any, n: number): Promise<Lesson> {
+  private async lesson(courseSlug: string, courseId: string, folder: string, unit: any, n: number): Promise<Lesson> {
     const lid = unit.id
     let title = unit.metadata?.title || `Lesson ${n}`
     this.state.current = title
@@ -624,9 +933,27 @@ export class DownloadJob {
           break
         }
       }
-      let stream = this.findStream(pp, meta)
-      const hasVideoHint = Object.entries(meta).some(([k, v]) => /video/i.test(k) && !!v)
-      if (!stream && hasVideoHint) stream = await this.loader.probeVideo()
+      // Some courses arrive slimmed down (title + thumbnail only); Skool's page then loads the
+      // lesson details separately. Take them from what the page received, else from the course data.
+      if (!('desc' in meta) && !('videoLink' in meta) && !('resources' in meta)) {
+        const fromNode = (data: any) => {
+          for (const [, v, parent] of deepFind(data, new Set(['id'])))
+            if (v === lid && parent.metadata && typeof parent.metadata === 'object' && Object.keys(parent.metadata).length > Object.keys(meta).length)
+              return parent.metadata
+          return null
+        }
+        let full: any = null
+        for (const r of this.loader.apiResponses) if (!full) full = fromNode(camelize(parseJson(r.body)))
+        if (!full) full = fromNode(await this.courseFromApi(courseId))
+        if (full) {
+          Object.assign(meta, full)
+          this.filledLessons++
+        }
+      }
+      let stream = await this.streamFor(pp, meta)
+      // A duration with an empty link is not a player. Probing it only waits and still finds nothing.
+      const linkHint = !!(meta.videoId || meta.video_id || String(meta.videoLink || meta.video_link || '').trim() || loomShareUrl(meta.videoThumbnail || meta.video_thumbnail))
+      if (!stream && linkHint) stream = playable(await this.loader.probeVideo())
 
       // attachments: direct URL / API first, then click-to-download on the open page
       const resources: Attachment[] = []
@@ -640,21 +967,21 @@ export class DownloadJob {
         resources.push(item)
       }
       // community posts the creator attached to this lesson (Skool shows them as post cards)
-      const pinned: string[] = (Array.isArray(pp.pinnedPosts) ? pp.pinnedPosts : [])
+      const pinned: { name: string; hasVideo: boolean }[] = (Array.isArray(pp.pinnedPosts) ? pp.pinnedPosts : [])
         .map((t: any) => t?.post || t)
         .filter((p: any) => p?.name && (!p.metadata?.pinnedModule || p.metadata.pinnedModule === lid))
-        .map((p: any) => p.name)
+        .map((p: any) => ({ name: p.name as string, hasVideo: postCarriesVideo(p) }))
       return { pp, meta, stream, resources, pinned }
     })
-    this.check()
+    await this.gate()
     writeJson(join(this.dir, 'raw', 'classroom', folder, `${pad(n)}_${lid}.json`), res.pp)
 
     const meta = res.meta
     title = meta.title || title
     const desc = meta.desc || ''
     // Lessons often just link to a community post; remember those so we archive them too.
-    for (const s of postLinks(JSON.stringify(desc) + JSON.stringify(meta.resources || ''), this.opts.slug)) this.linkedPosts.add(s)
-    for (const s of res.pinned) this.linkedPosts.add(s)
+    this.noteLinks(JSON.stringify(desc) + JSON.stringify(meta.resources || ''))
+    for (const s of res.pinned) this.notePost(s.name)
     const local = await this.localImages(imageUrls(desc))
     const html = toHtml(desc, (u) => local.get(u) || u)
 
@@ -671,16 +998,37 @@ export class DownloadJob {
           durationMs: meta.videoLenMs,
           target: video,
           refresh: async () =>
-            this.loader.withPage(url, async (nd) => this.findStream(pageProps(nd), meta) || (await this.loader.probeVideo()))
+            this.loader.withPage(url, async (nd) => {
+              const pp = pageProps(nd)
+              return (await this.streamFor(pp, meta)) || playable(await this.loader.probeVideo())
+            })
         })
       }
-    } else if (Object.entries(meta).some(([k, v]) => /video/i.test(k) && !!v)) {
-      this.fail(`video not found on page: ${title}`)
+    }
+    // say what's actually missing, and remember it so "only new" tries this lesson again next time
+    let videoMissing = false
+    if (!res.stream) {
+      const recording = res.pinned.find((p) => p.hasVideo)
+      if (recording) {
+        // The lesson module has an empty video link. The recording is the pinned community post.
+        this.recordingLessons.set(recording.name, { lessonId: lid, folder, stem: stemOf(title) })
+        videoMissing = true
+      } else if (res.pp?.video?.playbackId && !playbackJwt(res.pp.video.playbackToken)) {
+        videoMissing = true
+        const lock = courseLockNote(res.pp)
+        this.fail(lock ? `${lock}: ${title}` : `could not get a playback link: ${title}${this.playbackNote}`)
+      } else if (meta.videoId || meta.videoLink || loomShareUrl(meta.videoThumbnail)) {
+        videoMissing = true
+        this.fail(`video not found on page: ${title}`)
+      } else if (meta.videoLenMs) {
+        videoMissing = true
+        this.fail(`no video link in Skool's data (the creator may have removed the video): ${title}`)
+      }
     }
 
     this.state.done++
     this.emit()
-    return { type: 'lesson', id: lid, n, title, html, video, resources: res.resources, posts: res.pinned }
+    return { type: 'lesson', id: lid, n, title, html, video, resources: res.resources, posts: res.pinned.map((p) => p.name), rev: LESSON_REV, videoMissing }
   }
 
   // ---------------- community
@@ -693,9 +1041,29 @@ export class DownloadJob {
     const feed: any[] = []
     const seen = new Set<string>()
     let categories: Category[] = []
+    let pageMisses = 0
     for (let p = 1; p < 2000; p++) {
-      this.check()
-      const pp = pageProps(await this.loader.nextData(`${BASE}/${o.slug}${p > 1 ? `?p=${p}` : ''}`))
+      await this.gate()
+      let pp: any
+      try {
+        pp = pageProps(await this.loader.nextData(`${BASE}/${o.slug}${p > 1 ? `?p=${p}` : ''}`))
+        pageMisses = 0
+      } catch (e: any) {
+        if (this.abort.signal.aborted || e?.message === 'cancelled') throw e
+        pageMisses++
+        const why = String(e?.message || e)
+        // One bad page is skipped. Two in a row means the feed has stopped responding.
+        if (pageMisses < 2) {
+          this.log(`community page ${p} did not load; trying the next page. ${why}`)
+          continue
+        }
+        this.fail(
+          feed.length
+            ? `community page ${p} did not load (${why}). Later pages were skipped; the ${feed.length} posts found before it are still saved.`
+            : `community page ${p} did not load (${why}).`
+        )
+        break
+      }
       if (p === 1) categories = this.categories(pp, g)
       const posts = postsOf(pp)
       // checked one by one: Skool lists pinned posts twice on the same page
@@ -723,7 +1091,7 @@ export class DownloadJob {
     // Several posts in flight: page loads still queue one at a time in the loader,
     // but each post's media downloads while the next post's page loads.
     await this.pool(list, speedProfile().posts, async (raw) => {
-      this.check()
+      await this.gate()
       const saved = this.archive.community.posts.find((p) => p.id === raw.id)
       if (o.onlyNew && this.postComplete(saved, Number(raw.metadata?.comments || 0))) {
         skipped++
@@ -734,6 +1102,23 @@ export class DownloadJob {
       this.emit()
     })
     if (o.onlyNew) this.log(`community: ${skipped} unchanged posts skipped, ${list.length - skipped} new or updated`)
+  }
+
+  /** Remember a community post slug so a later pass downloads it if it is not in the archive yet. */
+  private notePost(slug: string) {
+    const s = String(slug || '').trim().toLowerCase()
+    if (s && !RESERVED.has(s)) this.linkedPosts.add(s)
+  }
+
+  private noteLinks(text: string) {
+    for (const s of postLinks(text, this.opts.slug)) this.notePost(s)
+  }
+
+  private noteTree(cs: Comment[]) {
+    for (const c of cs) {
+      this.noteLinks(c.html)
+      if (c.replies.length) this.noteTree(c.replies)
+    }
   }
 
   /** Download one post (by feed object or slug), with comments, and merge it into the archive. */
@@ -754,6 +1139,13 @@ export class DownloadJob {
         const post = tree?.post ? { ...(full || {}), ...tree.post, user: tree.post.user || full?.user } : full
         let kids: any[] = []
         if (comments && post?.id) kids = await this.loadComments(post, groupId, tree?.children || [])
+        for (const v of Array.isArray(tree?.videos) ? tree.videos : []) {
+          if (v?.playbackId && !playbackJwt(v.playbackToken) && v.id) {
+            const signed = await this.playbackFromTokens(String(v.id), String(v.playbackId))
+            const tok = signed ? new URL(signed).searchParams.get('token') : null
+            if (tok) v.playbackToken = tok
+          }
+        }
         return { pp, tree, post, kids }
       })
       writeJson(join(this.dir, 'raw', 'community', `${safeName(name)}.json`), { ...(res.tree || res.pp), comments: res.kids })
@@ -769,7 +1161,17 @@ export class DownloadJob {
       this.log(`comments: got ${countTree(children)}/${expected} for "${full.metadata?.title || name}"`)
     try {
       const post = await this.post(full, children, videos, url)
-      // never let a re-fetch shrink what's already saved (e.g. the comments request was refused this time)
+      await this.mergePost(post, url)
+      return post
+    } catch (e: any) {
+      this.fail(`post failed: ${name} — ${e.message}`)
+      return null
+    }
+  }
+
+  /** Keep the richer saved copy, then swap this post into the archive. One merge at a time. */
+  private mergePost(post: Post, url: string): Promise<void> {
+    const job = this.postChain.then(() => {
       const saved = this.archive.community.posts.find((p) => p.id === post.id)
       const size = (cs: Comment[]): number => cs.reduce((n, c) => n + 1 + size(c.replies), 0)
       if (saved && size(saved.comments) > size(post.comments)) {
@@ -784,12 +1186,16 @@ export class DownloadJob {
       posts.push(post)
       posts.sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.createdAt.localeCompare(a.createdAt))
       this.archive.community.posts = posts
+      this.attachRecording(post.slug, post.videos, url)
+      this.noteLinks(post.html)
+      this.noteTree(post.comments)
       this.save()
-      return post
-    } catch (e: any) {
-      this.fail(`post failed: ${name} — ${e.message}`)
-      return null
-    }
+    })
+    this.postChain = job.then(
+      () => undefined,
+      () => undefined
+    )
+    return job
   }
 
   private categories(pp: any, g: any): Category[] {
@@ -906,7 +1312,14 @@ export class DownloadJob {
     // Skool-hosted (Mux) videos uploaded to the post
     for (const [i, v] of hosted.entries()) {
       if (!v?.playbackId) continue
-      const stream = `https://stream.video.skool.com/${v.playbackId}.m3u8${v.playbackToken ? `?token=${v.playbackToken}` : ''}`
+      const tok = playbackJwt(v.playbackToken)
+      if (!tok) {
+        this.fail(`could not get a playback link: ${m.title || p.name}${this.playbackNote}`)
+        // Keep a file-less entry so the next update tries the token request again.
+        videos.push({ source: `https://stream.video.skool.com/${v.playbackId}.m3u8`, durationMs: v.duration || null, error: 'could not get a playback link' })
+        continue
+      }
+      const stream = `https://stream.video.skool.com/${v.playbackId}.m3u8?token=${tok}`
       const thumbUrl = i === 0 && m.imagePreview ? m.imagePreview : v.thumbnailToken ? `https://image.video.skool.com/${v.playbackId}/thumbnail.jpg?token=${v.thumbnailToken}` : null
       const ref: VideoRef = { source: stream, thumb: await this.asset(thumbUrl), durationMs: v.duration || null }
       videos.push(ref)
@@ -923,7 +1336,9 @@ export class DownloadJob {
             ? async () =>
                 this.loader.withPage(pageUrl, async (nd) => {
                   const fresh = (pageProps(nd).postTree?.videos || []).find((x: any) => x.id === v.id || x.playbackId === v.playbackId)
-                  return fresh?.playbackToken ? `https://stream.video.skool.com/${fresh.playbackId}.m3u8?token=${fresh.playbackToken}` : null
+                  const tok = playbackJwt(fresh?.playbackToken)
+                  if (fresh?.playbackId && tok) return `https://stream.video.skool.com/${fresh.playbackId}.m3u8?token=${tok}`
+                  return fresh?.id ? this.playbackFromTokens(String(fresh.id), fresh.playbackId ? String(fresh.playbackId) : undefined) : null
                 })
             : undefined
         })
@@ -1010,6 +1425,13 @@ export function fileNameFor(title: string, original?: string, type?: string): st
 
 const RESERVED = new Set(['classroom', 'about', 'members', 'leaderboards', 'calendar', 'map', 'settings', '-', 'admin', 'chat', 'notifications'])
 
+/** A pinned post that holds the lesson recording: a Skool upload id, or a Skool video thumbnail. */
+function postCarriesVideo(p: any): boolean {
+  const m = p?.metadata || {}
+  if (String(m.videoIds || m.video_ids || '').trim()) return true
+  return /\/\/(?:image|stream)\.video\.skool\.com\//.test(String(m.imagePreview || m.image_preview || m.imagePreviewSmall || ''))
+}
+
 /** Slugs of community posts linked as https://www.skool.com/<group>/<post-slug>. */
 function postLinks(text: string, slug: string): string[] {
   const esc = slug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -1037,6 +1459,117 @@ function findTree(pp: any, id: string): any {
  * Skool's REST API (api2.skool.com) uses snake_case (created_at, parent_id, first_name, picture_bubble)
  * while page data uses camelCase. Convert API objects so the rest of the code sees one shape.
  */
+/**
+ * Skool omits the playback link when the course has not unlocked.
+ * Drip is counted from the member's approved date.
+ */
+function courseLockNote(pp: any): string | null {
+  const meta = pp?.course?.course?.metadata || pp?.course?.metadata
+  if (!meta || meta.hasAccess === 1 || meta.hasAccess === true) return null
+  let drip: any = null
+  try {
+    drip = typeof meta.dripConfig === 'string' ? JSON.parse(meta.dripConfig) : meta.dripConfig
+  } catch {
+    drip = null
+  }
+  const days = Number(drip?.days)
+  if (drip?.enabled && days > 0) {
+    const joined = pp?.self?.member?.approvedAt || pp?.self?.member?.createdAt
+    const start = joined ? new Date(joined) : null
+    if (start && !Number.isNaN(start.getTime())) {
+      const until = new Date(start.getTime() + days * 86400000)
+      return `locked until ${until.toISOString().slice(0, 10)} (opens ${days} days after joining)`
+    }
+    return `locked until ${days} days after joining`
+  }
+  if (meta.hasAccess === 0) return 'locked on Skool'
+  return null
+}
+
+/** Playback JWTs are aud "v". Thumbnail tokens (aud "t") are not accepted on the playlist. */
+function playbackJwt(tok: unknown): string | null {
+  const s = String(tok || '')
+  const mid = s.split('.')[1]
+  if (!mid) return null
+  try {
+    const json = JSON.parse(Buffer.from(mid, 'base64url').toString('utf8'))
+    return json?.aud === 'v' ? s : null
+  } catch {
+    return null
+  }
+}
+
+/** Pull a signed playlist URL out of a /videos/:id/tokens body. */
+function urlFromPlayback(data: any, playbackId?: string): string | null {
+  if (typeof data === 'string') {
+    if (data[0] === '{' || data[0] === '[') {
+      const parsed = parseJson(data)
+      if (parsed && typeof parsed === 'object') return urlFromPlayback(camelize(parsed), playbackId)
+    }
+    const tok = playbackJwt(data)
+    return playbackId && tok ? `https://stream.video.skool.com/${playbackId}.m3u8?token=${tok}` : null
+  }
+  if (!data || typeof data !== 'object') return null
+  if (Array.isArray(data)) {
+    for (const x of data) {
+      const hit = urlFromPlayback(x, playbackId)
+      if (hit) return hit
+    }
+    return null
+  }
+  const ownId = data.playbackId || data.playback_id
+  const id = typeof ownId === 'string' && ownId ? ownId : playbackId
+  const tok = playbackJwt(data.playbackToken || data.playback_token || data.tokens?.playback || data.playback)
+  if (id && tok) return `https://stream.video.skool.com/${id}.m3u8?token=${tok}`
+  for (const v of Object.values(data)) {
+    if (typeof v === 'string' || (v && typeof v === 'object')) {
+      const hit = urlFromPlayback(v, id)
+      if (hit) return hit
+    }
+  }
+  return null
+}
+
+function playbackUrl(r: { status: number; text: string }, playbackId?: string): string | null {
+  if (r.status >= 400 || !r.text) return null
+  return urlFromPlayback(camelize(parseJson(r.text)), playbackId)
+}
+
+/** Every distinct reply, so a later owner-only error does not hide the token request. */
+function playbackFailureNotes(tried: { status: number; text: string }[]): string {
+  const out: string[] = []
+  const seen = new Set<string>()
+  for (const r of tried) {
+    const n = playbackFailureNote(r)
+    if (seen.has(n)) continue
+    seen.add(n)
+    out.push(n)
+  }
+  return out.join('; ') || 'HTTP 0'
+}
+
+/** Status, field names, and a short plain reply. Never the token itself. */
+function playbackFailureNote(r: { status: number; text: string }): string {
+  const j = parseJson(r.text)
+  const obj = j && typeof j === 'object' && !Array.isArray(j) ? (j as Record<string, unknown>) : null
+  const raw = obj ? obj.code ?? (obj.error as any)?.code ?? (obj.data as any)?.code : null
+  const code = typeof raw === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(raw) ? raw : typeof raw === 'number' ? String(raw) : ''
+  const keys = obj ? Object.keys(obj).slice(0, 8).join(',') : ''
+  let snippet = ''
+  if (!obj) {
+    const t = String(r.text || '').replace(/\s+/g, ' ').trim()
+    if (t && !t.includes('eyJ') && t.length <= 200) snippet = ' ' + JSON.stringify(t.slice(0, 60))
+  }
+  return `HTTP ${r.status}${code ? ' ' + code : ''}${keys ? ' ' + keys : ''}${snippet}`
+}
+
+/** Drop a Skool/Mux playlist that has no playback token. Other hosts pass through. */
+function playable(url: string | null | undefined): string | null {
+  if (!url) return null
+  if (/\/\/stream\.(video\.skool|mux)\.com\/[^/?]+\.m3u8(?=$|\?)/.test(url) && !/[?&]token=/.test(url)) return null
+  return url
+}
+
 export function camelize(v: any): any {
   if (Array.isArray(v)) return v.map(camelize)
   if (!v || typeof v !== 'object') return v

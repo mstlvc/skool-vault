@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import type { GroupArchive, LibraryEntry, Lesson, Post, Section } from '../../../shared/types'
+import { localizeHtml } from '../../../shared/links'
+import type { Course, GroupArchive, LibraryEntry, Lesson, Post, Section } from '../../../shared/types'
 
 // In dev the viewer runs on the vite server and talks to the app's server via ?server=
 export const API = new URLSearchParams(location.search).get('server') || ''
@@ -14,13 +15,11 @@ export const rewriteHtml = (slug: string, html: string) =>
 const escHtml = (s: any) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 
-/** Links to archived community posts become Skool-style embedded post cards (or internal links when inline). */
-export function embedPosts(html: string, slug: string, posts: Post[]) {
-  if (!posts.length) return html
-  const bySlug = new Map(posts.map((p) => [p.slug.toLowerCase(), p]))
-  const esc = slug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const link = `https?://(?:www\\.)?skool\\.com/${esc}/([a-z0-9][a-z0-9-]*)[^"]*`
-  const card = (p: Post) => {
+/** Same-group links open the downloaded lesson, course, or post. A paragraph that is only a post link becomes a card. */
+export function embedPosts(html: string, slug: string, posts: Post[], courses: Course[] = []) {
+  const card = (postId: string) => {
+    const p = posts.find((x) => x.id === postId)
+    if (!p) return ''
     const av = p.author.avatar ? `<img class="avatar" src="${escHtml(media(slug, p.author.avatar))}" width="36" height="36" alt="">` : ''
     return `<div class="post-embed" data-post="${escHtml(p.id)}">
       <div class="post-head">${av}<div><div class="author">${escHtml(p.author.name)}</div><div class="meta">${escHtml(timeAgo(p.createdAt))}</div></div></div>
@@ -29,16 +28,7 @@ export function embedPosts(html: string, slug: string, posts: Post[]) {
       <div class="post-foot"><span>👍 ${p.upvotes}</span><span>💬 ${p.commentCount}</span>${p.attachments.length ? `<span>📎 ${p.attachments.length}</span>` : ''}</div>
     </div>`
   }
-  // a paragraph that is only a post link -> card
-  html = html.replace(new RegExp(`<p>\\s*<a [^>]*href="(${link})"[^>]*>[^<]*</a>\\s*</p>`, 'gi'), (m, _u, s) => {
-    const p = bySlug.get(String(s).toLowerCase())
-    return p ? card(p) : m
-  })
-  // other links to archived posts open them in the viewer
-  return html.replace(new RegExp(`href="(${link})"( target="_blank" rel="noopener")?`, 'gi'), (m, _u, s) => {
-    const p = bySlug.get(String(s).toLowerCase())
-    return p ? `href="#/g/${encodeURIComponent(slug)}/post/${encodeURIComponent(p.id)}"` : m
-  })
+  return localizeHtml(html, slug, posts, courses, card)
 }
 
 export async function getJson<T>(path: string): Promise<T> {

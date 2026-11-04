@@ -171,11 +171,12 @@ function CourseView({ data, course, lessonId, query }: { data: GroupArchive; cou
                 onEnded={() => toggle(current.id, true)}
               />
             )}
-            <Rich slug={slug} html={current.html} className="lesson-body" posts={data.community.posts} />
+            <Rich slug={slug} html={current.html} className="lesson-body" posts={data.community.posts} courses={data.classroom.courses} />
             {(current.posts || []).length > 0 && (
               <div className="lesson-posts">
                 {current.posts!.map((s) => {
-                  const p = data.community.posts.find((x) => x.slug === s || x.id === s)
+                  const key = s.toLowerCase()
+                  const p = data.community.posts.find((x) => x.slug.toLowerCase() === key || x.id.toLowerCase() === key)
                   return p ? (
                     <PostEmbed key={s} slug={slug} post={p} category={data.community.categories.find((c) => c.id === p.category)?.name} />
                   ) : (
@@ -189,7 +190,7 @@ function CourseView({ data, course, lessonId, query }: { data: GroupArchive; cou
             {current.resources.length > 0 && (
               <div className="resources">
                 <h4>Resources</h4>
-                <Attachments slug={slug} items={current.resources} />
+                <Attachments slug={slug} items={current.resources} posts={data.community.posts} courses={data.classroom.courses} />
               </div>
             )}
             <div className="lesson-nav">

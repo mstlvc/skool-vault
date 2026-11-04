@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import type { ClassroomArchive, CommunityArchive, GroupArchive, GroupInfo, LibraryEntry, Lesson, Section } from '../shared/types'
+import { withLessonPosts } from './pinned'
 import { getSettings } from './settings'
 
 export const groupDir = (slug: string) => join(getSettings().libraryDir, slug)
@@ -25,11 +26,9 @@ export function loadGroup(slug: string): GroupArchive | null {
   const dir = groupDir(slug)
   const group = readJson<GroupInfo | null>(join(dir, 'group.json'), null)
   if (!group) return null
-  return {
-    group,
-    classroom: readJson<ClassroomArchive>(join(dir, 'classroom.json'), { courses: [] }),
-    community: readJson<CommunityArchive>(join(dir, 'community.json'), { categories: [], posts: [] })
-  }
+  const classroom = readJson<ClassroomArchive>(join(dir, 'classroom.json'), { courses: [] })
+  const community = readJson<CommunityArchive>(join(dir, 'community.json'), { categories: [], posts: [] })
+  return { group, classroom, community: withLessonPosts(dir, classroom, community) }
 }
 
 export const lessonsOf = (items: (Section | Lesson)[]): Lesson[] =>

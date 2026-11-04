@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { estimateLeft, formatLeft, videoWork, type EtaSample } from './eta'
 import type {
-  Account, GroupArchive, JobState, Lesson, LibraryEntry, RemoteGroup, RemoteState, ScanResult, Section, Settings, Speed
+  Account, GroupArchive, JobState, Lesson, LibraryEntry, RemoteGroup, RemoteState, ScanResult, ScanSection, Section, Settings, Speed, TempUsage
 } from '../../../shared/types'
 import { Icon } from '../viewer/ui'
 import { WindowControls } from '../common/WindowControls'
@@ -51,7 +52,7 @@ export function App() {
 
   const refreshLibrary = () => vault.library().then(setLibrary)
   useEffect(() => {
-    vault.account().then(setAccount)
+    vault.account().then(setAccount, () => setAccount({ loggedIn: false, accounts: [] }))
     vault.serverInfo().then((i) => setPort(i.port))
     vault.jobs().then((l) => setJobs(Object.fromEntries(l.map((j) => [j.id, j]))))
     refreshLibrary()
@@ -67,10 +68,26 @@ export function App() {
     }
   }, [])
   useEffect(() => {
-    if (!account?.loggedIn) return
+    setRemote(null)
     setRemoteErr('')
-    vault.remoteGroups().then(setRemote, (e) => setRemoteErr(errText(e)))
-  }, [account?.loggedIn])
+    if (!account?.loggedIn) return
+    let cancel = false
+    vault.remoteGroups().then(
+      (groups) => {
+        if (cancel) return
+        setRemote(groups)
+        vault.account().then((next) => {
+          if (!cancel) setAccount(next)
+        })
+      },
+      (e) => {
+        if (!cancel) setRemoteErr(errText(e))
+      }
+    )
+    return () => {
+      cancel = true
+    }
+  }, [account?.id, account?.loggedIn])
 
   // communities from your Skool account and from the library, merged
   const communities = useMemo<Community[]>(() => {
@@ -84,7 +101,8 @@ export function App() {
   }, [remote, library, port])
 
   useEffect(() => {
-    if (!selected && communities.length) setSelected(communities[0].slug)
+    if (!communities.length) return
+    if (!selected || !communities.some((c) => c.slug === selected)) setSelected(communities[0].slug)
   }, [communities, selected])
 
   const latestJob = (slug: string) =>
@@ -113,13 +131,16 @@ export function App() {
             </button>
           </li>
           {communities.map((c) => {
-            const running = latestJob(c.slug)?.status === 'running'
+            const job = latestJob(c.slug)
+            const running = job?.status === 'running'
             return (
               <li key={c.slug}>
                 <button className={page === 'group' && selected === c.slug ? 'menu-active' : ''} onClick={() => go('group', c.slug)}>
                   <GroupLogo src={c.logo} name={c.name} size="w-5" />
                   <span className="truncate">{c.name}</span>
-                  {running ? (
+                  {running && job?.paused ? (
+                    <span className="ml-auto h-2 w-2 flex-none rounded-full bg-warning" title="Paused" />
+                  ) : running ? (
                     <span className="rec ml-auto" title="Downloading" />
                   ) : c.saved ? (
                     <span className="ml-auto opacity-60" title="Saved on this PC">
@@ -178,7 +199,7 @@ export function App() {
         {page === 'settings' && <SettingsPage onSaved={() => vault.serverInfo().then((i) => setPort(i.port))} />}
         {page === 'group' &&
           (current ? (
-            <GroupPage key={current.slug} community={current} port={port} account={account} setAccount={setAccount} job={latestJob(current.slug)} />
+            <GroupPage key={`${account?.id || 'none'}:${current.slug}`} community={current} port={port} account={account} setAccount={setAccount} job={latestJob(current.slug)} />
           ) : account && !account.loggedIn ? (
             <ConnectPage setAccount={setAccount} />
           ) : (
@@ -214,25 +235,127 @@ function GroupLogo({ src, name, size = 'w-8' }: { src?: string | null; name: str
   )
 }
 
+function accountLabel(name: string | undefined, loggedIn: boolean, index: number) {
+  if (name) return name
+  if (loggedIn) return 'Signed in'
+  return index === 0 ? 'Not signed in' : `Account ${index + 1}`
+}
+
 function AccountBox({ account, setAccount }: { account: Account | null; setAccount: (a: Account) => void }) {
-  if (!account) return <div className="flex-1" />
-  if (!account.loggedIn)
+  const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [confirmRemove, setConfirmRemove] = useState(false)
+  useEffect(() => setConfirmRemove(false), [account?.id])
+  if (!account)
     return (
-      <button className="btn btn-primary btn-sm flex-1" onClick={() => vault.login().then(setAccount)}>
-        Log in to Skool
-      </button>
-    )
-  return (
-    <div className="dropdown dropdown-top min-w-0 flex-1">
-      <div tabIndex={0} role="button" className="flex items-center gap-2.5 rounded-field px-2 py-1.5 hover:bg-base-300/60">
-        <GroupLogo src={account.avatar} name={account.name || '?'} size="w-7" />
-        <span className="truncate text-sm font-medium">{account.name || 'Logged in'}</span>
+      <div className="flex flex-1 items-center gap-2 px-2 text-sm text-secondary">
+        <span className="loading loading-spinner loading-xs" />
       </div>
-      <ul tabIndex={0} className="dropdown-content menu z-10 mb-2 w-56 rounded-box border border-base-300 bg-base-100 p-2">
-        <li>
-          <button onClick={() => vault.logout().then(setAccount)}>Log out of Skool</button>
-        </li>
-      </ul>
+    )
+
+  const run = async (fn: () => Promise<Account>) => {
+    setErr('')
+    setConfirmRemove(false)
+    setBusy(true)
+    try {
+      setAccount(await fn())
+    } catch (e) {
+      setErr(errText(e))
+    } finally {
+      setBusy(false)
+      ;(document.activeElement as HTMLElement | null)?.blur()
+    }
+  }
+  const saved = account.accounts || []
+  const activeIndex = Math.max(0, saved.findIndex((a) => a.active))
+  const label = account.loggedIn ? accountLabel(account.name, true, activeIndex) : 'Log in to Skool'
+
+  return (
+    <div className="min-w-0 flex-1">
+      <div className="dropdown dropdown-top w-full">
+        <div
+          tabIndex={0}
+          role="button"
+          className={
+            account.loggedIn
+              ? 'flex items-center gap-2.5 rounded-field px-2 py-1.5 hover:bg-base-300/60'
+              : 'btn btn-primary btn-sm w-full justify-start'
+          }
+          onClick={() => setConfirmRemove(false)}
+        >
+          {account.loggedIn && <GroupLogo src={account.avatar} name={label} size="w-7" />}
+          <span className="min-w-0 flex-1 truncate text-sm font-medium">{label}</span>
+        </div>
+        <ul tabIndex={0} className="dropdown-content menu z-20 mb-2 max-h-80 w-64 flex-nowrap overflow-y-auto rounded-box border border-base-300 bg-base-100 p-2">
+          {saved.map((a, i) => (
+            <li key={a.id}>
+              <button
+                disabled={busy}
+                onClick={() => {
+                  if (a.active) return
+                  void run(() => vault.switchAccount(a.id))
+                }}
+              >
+                <GroupLogo src={a.avatar} name={accountLabel(a.name, a.loggedIn, i)} size="w-5" />
+                <span className="min-w-0 flex-1 truncate">{accountLabel(a.name, a.loggedIn, i)}</span>
+                {a.active && <Icon name="check" size={14} />}
+              </button>
+            </li>
+          ))}
+          {saved.length > 0 && <div className="my-1 h-px bg-base-300" />}
+          {!account.loggedIn && (
+            <li>
+              <button disabled={busy} onClick={() => void run(() => vault.login())}>
+                Log in to Skool
+              </button>
+            </li>
+          )}
+          {account.id && (
+            <li>
+              <button disabled={busy} onClick={() => void run(() => vault.addAccount())}>
+                Add account
+              </button>
+            </li>
+          )}
+          {account.loggedIn && (
+            <li>
+              <button
+                onClick={() => {
+                  void vault.browseSkool()
+                  ;(document.activeElement as HTMLElement | null)?.blur()
+                }}
+              >
+                Browse Skool
+              </button>
+            </li>
+          )}
+          {account.loggedIn && (
+            <li>
+              <button disabled={busy} onClick={() => void run(() => vault.logout())}>
+                Log out of Skool
+              </button>
+            </li>
+          )}
+          {account.id && (
+            <li>
+              <button
+                className="text-error"
+                disabled={busy}
+                onClick={() => {
+                  if (!confirmRemove) {
+                    setConfirmRemove(true)
+                    return
+                  }
+                  void run(() => vault.removeAccount(account.id!))
+                }}
+              >
+                {confirmRemove ? 'Click again to remove' : 'Remove this account'}
+              </button>
+            </li>
+          )}
+        </ul>
+      </div>
+      {err && <p className="px-2 pt-1 text-xs text-error">{err}</p>}
     </div>
   )
 }
@@ -323,21 +446,39 @@ function GroupPage({
   const [scanErr, setScanErr] = useState('')
   const [archive, setArchive] = useState<GroupArchive | null>(null)
   const [picked, setPicked] = useState<Set<string>>(new Set())
+  const [skipped, setSkipped] = useState<Set<string>>(new Set())
+  const [openIds, setOpenIds] = useState<Set<string>>(new Set())
+  const [live, setLive] = useState<Record<string, ScanSection[] | 'loading' | 'error'>>({})
+  const pickedRef = useRef(picked)
+  const skippedRef = useRef(skipped)
+  const liveRef = useRef(live)
+  pickedRef.current = picked
+  skippedRef.current = skipped
+  liveRef.current = live
   const [o, setO] = useState({ videos: true, community: true, comments: true, postVideos: true, maxPosts: 0, onlyNew: true })
   const set = (patch: Partial<typeof o>) => setO({ ...o, ...patch })
   const saved = !!community.saved
   const running = job?.status === 'running'
 
   useEffect(() => {
+    setScan(null)
+    setScanErr('')
     if (!account?.loggedIn) return
+    let cancel = false
     vault.scan(slug).then(
       (s) => {
+        if (cancel) return
         setScan(s)
         setPicked(new Set(s.courses.filter((c) => !c.locked).map((c) => c.id)))
       },
-      (e) => setScanErr(errText(e))
+      (e) => {
+        if (!cancel) setScanErr(errText(e))
+      }
     )
-  }, [slug, account?.loggedIn])
+    return () => {
+      cancel = true
+    }
+  }, [slug, account?.loggedIn, account?.id])
 
   // what's already on disk, for the per-course column (refreshed after each run)
   useEffect(() => {
@@ -358,14 +499,138 @@ function GroupPage({
     return archive ? archive.community.posts.reduce((a, p) => a + n(p.comments), 0) : 0
   }, [archive])
 
-  const toggleCourse = (id: string) => {
-    const n = new Set(picked)
-    n.has(id) ? n.delete(id) : n.add(id)
+  const archiveSections = (id: string): ScanSection[] | null => {
+    const c = archive?.classroom.courses.find((x) => x.id === id)
+    if (!c) return null
+    return c.items.map((it) =>
+      it.type === 'set'
+        ? { title: it.title, lessons: it.items.map((l) => ({ id: l.id, title: l.title })) }
+        : { title: '', lessons: [{ id: it.id, title: it.title }] }
+    )
+  }
+  const idsOf = (sections: ScanSection[]) => sections.flatMap((sec) => sec.lessons.map((l) => l.id))
+  const knownSections = (id: string): ScanSection[] | null => {
+    const liveSections = live[id]
+    if (Array.isArray(liveSections)) return liveSections
+    return archiveSections(id)
+  }
+  const lessonIds = (id: string) => idsOf(knownSections(id) || [])
+  const commit = (n: Set<string>, s: Set<string>) => {
+    pickedRef.current = n
+    skippedRef.current = s
     setPicked(n)
+    setSkipped(s)
+  }
+  // A full outline is required before turning a course back on for only some lessons.
+  // The saved list can be shorter than the course, and those missing lessons would otherwise download.
+  const ensureIds = async (courseId: string, courseSlug: string, expected: number): Promise<string[]> => {
+    const current = liveRef.current[courseId]
+    if (Array.isArray(current)) {
+      const ids = idsOf(current)
+      if (!expected || ids.length >= expected) return ids
+    }
+    const known = idsOf(archiveSections(courseId) || [])
+    if (expected > 0 && known.length >= expected) return known
+    try {
+      const sections = await vault.courseOutline(slug, courseSlug)
+      setLive((s) => ({ ...s, [courseId]: sections }))
+      liveRef.current = { ...liveRef.current, [courseId]: sections }
+      return idsOf(sections)
+    } catch {
+      return Array.isArray(current) ? idsOf(current) : known
+    }
+  }
+  const dropIfNone = (courseId: string, allIds: string[], n: Set<string>, s: Set<string>) => {
+    if (allIds.length > 0 && allIds.every((id) => s.has(id))) {
+      n.delete(courseId)
+      for (const id of allIds) s.delete(id)
+    }
+  }
+  const toggleCourse = (id: string) => {
+    const ids = lessonIds(id)
+    const fully = pickedRef.current.has(id) && ids.every((lid) => !skippedRef.current.has(lid))
+    const n = new Set(pickedRef.current)
+    const s = new Set(skippedRef.current)
+    if (fully) n.delete(id)
+    else n.add(id)
+    for (const lid of ids) s.delete(lid)
+    commit(n, s)
+  }
+  const toggleLesson = (courseId: string, courseSlug: string, lessonId: string, expected: number) => {
+    const n = new Set(pickedRef.current)
+    const s = new Set(skippedRef.current)
+    if (n.has(courseId)) {
+      s.has(lessonId) ? s.delete(lessonId) : s.add(lessonId)
+      dropIfNone(courseId, lessonIds(courseId), n, s)
+      commit(n, s)
+      return
+    }
+    void ensureIds(courseId, courseSlug, expected).then((ids) => {
+      const next = new Set(pickedRef.current)
+      const skip = new Set(skippedRef.current)
+      if (next.has(courseId)) {
+        skip.has(lessonId) ? skip.delete(lessonId) : skip.add(lessonId)
+      } else {
+        next.add(courseId)
+        for (const id of ids) if (id !== lessonId) skip.add(id)
+        skip.delete(lessonId)
+      }
+      dropIfNone(courseId, ids.length ? ids : lessonIds(courseId), next, skip)
+      commit(next, skip)
+    })
+  }
+  const toggleSection = (courseId: string, courseSlug: string, sectionTitle: string, sectionIds: string[], expected: number) => {
+    void (async () => {
+      if (expected > 0 && lessonIds(courseId).length < expected) await ensureIds(courseId, courseSlug, expected)
+      const loaded = liveRef.current[courseId]
+      const match = Array.isArray(loaded)
+        ? loaded.find((sec) => sec.title === sectionTitle && sectionIds.every((id) => sec.lessons.some((l) => l.id === id)))
+        : null
+      const target = match ? match.lessons.map((l) => l.id) : sectionIds
+      const all = Array.isArray(loaded) ? idsOf(loaded) : lessonIds(courseId)
+      const n = new Set(pickedRef.current)
+      const s = new Set(skippedRef.current)
+      const allOn = n.has(courseId) && target.every((id) => !s.has(id))
+      if (!n.has(courseId)) {
+        n.add(courseId)
+        const keep = new Set(target)
+        for (const id of all) if (!keep.has(id)) s.add(id)
+        for (const id of target) s.delete(id)
+      } else if (allOn) {
+        for (const id of target) s.add(id)
+      } else {
+        for (const id of target) s.delete(id)
+      }
+      dropIfNone(courseId, all.length ? all : target, n, s)
+      commit(n, s)
+    })()
+  }
+  const lessonMark = (courseId: string, lessonId: string) => {
+    const c = archive?.classroom.courses.find((x) => x.id === courseId)
+    const l = c && lessonsOf(c.items).find((x) => x.id === lessonId)
+    if (!l) return 'Not saved'
+    return lessonSaved(l) ? 'Saved' : 'Partly saved'
+  }
+  const toggleOpen = (id: string, courseSlug: string) => {
+    const n = new Set(openIds)
+    if (n.has(id)) {
+      n.delete(id)
+      setOpenIds(n)
+      return
+    }
+    n.add(id)
+    setOpenIds(n)
+    const have = live[id]
+    if (have && have !== 'error') return
+    setLive((s) => ({ ...s, [id]: 'loading' }))
+    vault.courseOutline(slug, courseSlug).then(
+      (sections) => setLive((s) => ({ ...s, [id]: sections })),
+      () => setLive((s) => ({ ...s, [id]: 'error' }))
+    )
   }
   const open = scan?.courses.filter((c) => !c.locked) || []
-  const allPicked = open.length > 0 && open.every((c) => picked.has(c.id))
-  const start = () => vault.startJob({ slug, courses: [...picked], ...o, onlyNew: saved && o.onlyNew })
+  const allPicked = open.length > 0 && open.every((c) => picked.has(c.id)) && skipped.size === 0
+  const start = () => vault.startJob({ slug, courses: [...picked], skipLessons: [...skipped], ...o, onlyNew: saved && o.onlyNew })
   const actionLabel = !saved ? 'Download' : o.onlyNew ? 'Download new' : 'Download everything again'
 
   return (
@@ -387,13 +652,20 @@ function GroupPage({
                 </button>
               </>
             )}
+            {account?.loggedIn && (
+              <>
+                <button className="link link-hover" onClick={() => vault.browseSkool(`https://www.skool.com/${slug}`)}>
+                  Browse on Skool
+                </button>
+              </>
+            )}
           </div>
         </div>
         {scan && (
           <div className="flex flex-none flex-col items-end gap-2 pt-1">
             <button className="btn btn-primary" disabled={running || (!picked.size && !o.community)} onClick={start}>
-              {running && <span className="loading loading-spinner loading-sm" />}
-              {running ? 'Downloading' : actionLabel}
+              {running && !job?.paused && <span className="loading loading-spinner loading-sm" />}
+              {running ? (job?.paused ? 'Paused' : 'Downloading') : actionLabel}
             </button>
             {saved && (
               <label
@@ -408,6 +680,11 @@ function GroupPage({
         )}
       </header>
 
+      {!account && (
+        <div className="mt-10 flex items-center gap-3 text-secondary">
+          <span className="loading loading-spinner loading-sm" /> Checking your Skool login
+        </div>
+      )}
       {account && !account.loggedIn && (
         <p className="mt-8 text-sm">
           <button className="link font-medium" onClick={() => vault.login().then(setAccount)}>
@@ -434,7 +711,10 @@ function GroupPage({
               Videos
             </label>
             {open.length > 0 && (
-              <button className="link link-hover" onClick={() => setPicked(allPicked ? new Set() : new Set(open.map((c) => c.id)))}>
+              <button
+                className="link link-hover"
+                onClick={() => commit(allPicked ? new Set() : new Set(open.map((c) => c.id)), new Set())}
+              >
                 {allPicked ? 'Select none' : 'Select all'}
               </button>
             )}
@@ -446,40 +726,135 @@ function GroupPage({
               <tbody>
                 {scan.courses.map((c) => {
                   const s = savedCourse(c.id)
+                  const opened = openIds.has(c.id)
+                  const status = live[c.id]
+                  const sections = Array.isArray(status) ? status : archiveSections(c.id)
+                  const ids = (sections || []).flatMap((sec) => sec.lessons.map((l) => l.id))
+                  const skipCount = ids.filter((id) => skipped.has(id)).length
+                  const courseOn = picked.has(c.id)
                   return (
-                    <tr key={c.id} className={c.locked ? 'opacity-45' : 'cursor-pointer hover:bg-base-200/50'} onClick={() => !c.locked && toggleCourse(c.id)}>
-                      <td className="w-8 pr-0">
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-sm"
-                          disabled={c.locked}
-                          checked={picked.has(c.id)}
-                          onChange={() => toggleCourse(c.id)}
-                          onClick={(e) => e.stopPropagation()}
-                          aria-label={c.title}
-                        />
-                      </td>
-                      <td>
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-14 flex-none overflow-hidden rounded bg-base-300">
-                            {c.cover && <img src={c.cover} alt="" className="h-full w-full object-cover" />}
+                    <Fragment key={c.id}>
+                      <tr className={c.locked ? 'opacity-45' : 'cursor-pointer hover:bg-base-200/50'} onClick={() => !c.locked && toggleCourse(c.id)}>
+                        <td className="w-8 pr-0" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-xs btn-square"
+                            aria-expanded={opened}
+                            aria-label={opened ? `Hide lessons in ${c.title}` : `Show lessons in ${c.title}`}
+                            onClick={() => toggleOpen(c.id, c.slug)}
+                          >
+                            <span className={'inline-flex transition-transform ' + (opened ? 'rotate-90' : '')}>
+                              <Icon name="chevron" size={16} />
+                            </span>
+                          </button>
+                        </td>
+                        <td className="w-8 pr-0">
+                          <input
+                            type="checkbox"
+                            className="checkbox checkbox-sm"
+                            disabled={c.locked}
+                            checked={courseOn && skipCount === 0}
+                            ref={(el) => {
+                              if (el) el.indeterminate = courseOn && skipCount > 0
+                            }}
+                            onChange={() => toggleCourse(c.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            aria-label={c.title}
+                          />
+                        </td>
+                        <td>
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-14 flex-none overflow-hidden rounded bg-base-300">
+                              {c.cover && <img src={c.cover} alt="" className="h-full w-full object-cover" />}
+                            </div>
+                            <span className="font-medium">{c.title}</span>
                           </div>
-                          <span className="font-medium">{c.title}</span>
-                        </div>
-                      </td>
-                      <td className="w-28 text-right text-sm tabular-nums text-secondary">{c.lessons} lessons</td>
-                      <td className="w-32 text-right text-sm tabular-nums">
-                        {c.locked ? (
-                          <span className="text-secondary">No access</span>
-                        ) : s ? (
-                          <span className={s.done === s.total ? 'text-success' : 'text-warning'}>
-                            {s.done === s.total ? 'Saved' : `${s.done} of ${s.total} saved`}
-                          </span>
-                        ) : (
-                          <span className="text-secondary">Not saved</span>
-                        )}
-                      </td>
-                    </tr>
+                        </td>
+                        <td className="w-32 text-right text-sm tabular-nums whitespace-nowrap text-secondary">
+                          {courseOn && skipCount > 0 ? `${Math.max(0, c.lessons - skipCount)} of ${c.lessons}` : `${c.lessons} lessons`}
+                        </td>
+                        <td className="w-32 text-right text-sm tabular-nums">
+                          {c.locked ? (
+                            <span className="text-secondary">No access</span>
+                          ) : s ? (
+                            <span className={s.done === s.total ? 'text-success' : 'text-warning'}>
+                              {s.done === s.total ? 'Saved' : `${s.done} of ${s.total} saved`}
+                            </span>
+                          ) : (
+                            <span className="text-secondary">Not saved</span>
+                          )}
+                        </td>
+                      </tr>
+                      {opened && (
+                        <tr>
+                          <td colSpan={5} className="bg-base-200/40 py-2 pr-4 pl-14">
+                            {status === 'loading' && (
+                              <p className="mb-2 flex items-center gap-2 text-xs text-secondary">
+                                <span className="loading loading-spinner loading-xs" />
+                                {job?.status === 'running'
+                                  ? 'Waiting for the current download, then reading lessons from Skool'
+                                  : sections
+                                    ? 'Checking Skool for lessons that are not saved yet'
+                                    : 'Reading lessons from Skool'}
+                              </p>
+                            )}
+                            {status === 'error' && !sections && (
+                              <p className="text-sm text-error">Couldn't read this course's lessons from Skool.</p>
+                            )}
+                            {status === 'error' && !!sections && (
+                              <p className="mb-2 text-xs text-secondary">Showing the saved lesson list. Skool didn't answer with a fresh one.</p>
+                            )}
+                            {Array.isArray(status) && !status.length && <p className="text-sm text-secondary">This course has no lessons.</p>}
+                            {sections?.map((section, i) => {
+                              const secIds = section.lessons.map((l) => l.id)
+                              const secSelected = secIds.filter((id) => courseOn && !skipped.has(id)).length
+                              const secOn = secIds.length > 0 && secSelected === secIds.length
+                              const secSome = secSelected > 0 && !secOn
+                              return (
+                              <div key={section.title + i} className={i ? 'mt-3' : ''}>
+                                {section.title && (
+                                  <label className={'mb-1 flex items-center gap-2.5 text-xs font-semibold text-secondary ' + (c.locked ? '' : 'cursor-pointer')}>
+                                    <input
+                                      type="checkbox"
+                                      className="checkbox checkbox-xs"
+                                      disabled={c.locked}
+                                      checked={secOn}
+                                      ref={(el) => {
+                                        if (el) el.indeterminate = secSome
+                                      }}
+                                      onChange={() => toggleSection(c.id, c.slug, section.title, secIds, c.lessons)}
+                                      aria-label={section.title}
+                                    />
+                                    <span>{section.title}</span>
+                                  </label>
+                                )}
+                                {section.lessons.map((l) => {
+                                  const mark = lessonMark(c.id, l.id)
+                                  const on = courseOn && !skipped.has(l.id)
+                                  return (
+                                    <label key={l.id} className={'flex items-center gap-2.5 py-0.5 text-sm ' + (c.locked ? '' : 'cursor-pointer')}>
+                                      <input
+                                        type="checkbox"
+                                        className="checkbox checkbox-xs"
+                                        disabled={c.locked}
+                                        checked={on}
+                                        onChange={() => toggleLesson(c.id, c.slug, l.id, c.lessons)}
+                                        aria-label={`Save ${l.title}`}
+                                      />
+                                      <span className={'min-w-0 flex-1 ' + (on ? '' : 'text-secondary')}>{l.title}</span>
+                                      <span className={'flex-none text-xs tabular-nums ' + (mark === 'Saved' ? 'text-success' : mark === 'Partly saved' ? 'text-warning' : 'text-secondary')}>
+                                        {on ? mark : 'Leave out'}
+                                      </span>
+                                    </label>
+                                  )
+                                })}
+                              </div>
+                              )
+                            })}
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   )
                 })}
               </tbody>
@@ -528,30 +903,80 @@ function GroupPage({
   )
 }
 
+/** Recent pace for this job. A gap longer than a few seconds starts the window over, so a pause is not counted as slow downloading. */
+function useTimeLeft(job: JobState): string | null {
+  const samples = useRef<EtaSample[]>([])
+  const seen = useRef(job.id)
+  const [label, setLabel] = useState<string | null>(null)
+  useEffect(() => {
+    if (seen.current !== job.id) {
+      seen.current = job.id
+      samples.current = []
+      setLabel(null)
+    }
+    if (job.status !== 'running') {
+      samples.current = []
+      setLabel(null)
+      return
+    }
+    if (job.paused) return
+    const t = Date.now()
+    const videos = videoWork(job)
+    const list = samples.current
+    const prev = list[list.length - 1]
+    if (prev && t - prev.t > 20000) list.length = 0
+    const head = list[list.length - 1]
+    if (!head || t - head.t >= 1000 || job.done !== head.items || Math.abs(videos - head.videos) > 0.001) {
+      list.push({ t, items: job.done, videos })
+      const cutoff = t - 90000
+      while (list.length > 2 && list[0].t < cutoff) list.shift()
+    }
+    const eta = estimateLeft(list, job)
+    if (eta != null) setLabel(formatLeft(eta))
+  }, [job])
+  return job.status === 'running' ? label : null
+}
+
 /** Download progress, inline under the header. */
 function JobLine({ job }: { job: JobState }) {
   const [log, setLog] = useState(false)
+  const left = useTimeLeft(job)
   const running = job.status === 'running'
   const pct = job.total ? Math.min(100, (job.done * 100) / job.total) : 0
   const tone = job.status === 'error' ? 'progress-error' : job.status === 'done' ? 'progress-success' : 'progress-primary'
   return (
     <div className="mt-8">
       <div className="flex items-center gap-3 text-sm">
-        {running && <span className="rec" />}
+        {running && !job.paused && <span className="rec" />}
+        {job.paused && <span className="h-2 w-2 flex-none rounded-full bg-warning" title="Paused" />}
         <span className="font-medium">{job.phase}</span>
         {job.current && <span className="min-w-0 flex-1 truncate text-secondary">{job.current}</span>}
         {!job.current && <span className="flex-1" />}
-        <span className="tabular-nums text-secondary">
+        <span className="flex-none whitespace-nowrap tabular-nums text-secondary">
           {job.done}/{job.total || '?'} items, {job.videosDone}/{job.videosTotal} videos
+          {left && (
+            <span title="Estimate from the recent pace, including videos still to be found."> · {left}</span>
+          )}
         </span>
         <button className="link link-hover text-secondary" onClick={() => setLog(!log)}>
           {log ? 'Hide log' : 'Log'}
           {job.errors.length > 0 && <span className="ml-1 text-error">({job.errors.length})</span>}
         </button>
         {running && (
-          <button className="link link-hover" onClick={() => vault.cancelJob(job.id)}>
-            Stop
-          </button>
+          <span className="flex items-center gap-1.5">
+            {job.paused ? (
+              <button className="btn btn-xs btn-primary" onClick={() => vault.resumeJob(job.id)} title="Continue where it left off">
+                Resume
+              </button>
+            ) : (
+              <button className="btn btn-xs" onClick={() => vault.pauseJob(job.id)} title="Hold the download. Videos in progress start over when you resume.">
+                Pause
+              </button>
+            )}
+            <button className="btn btn-xs btn-ghost" onClick={() => vault.cancelJob(job.id)} title="End the download; everything saved so far is kept">
+              Stop
+            </button>
+          </span>
         )}
       </div>
       <progress className={`progress mt-2 h-1 ${tone}`} value={running ? pct : 100} max={100} />
@@ -722,11 +1147,20 @@ function PhoneShare({ remote, setRemote }: { remote: RemoteState; setRemote: (r:
 }
 
 // ---------------------------------------------------------------- settings
+const fmtBytes = (n: number) =>
+  n < 1024 * 1024 * 1024 ? `${Math.max(0, Math.round(n / 1024 / 1024))} MB` : `${(n / 1024 / 1024 / 1024).toFixed(1)} GB`
+
 function SettingsPage({ onSaved }: { onSaved: () => void }) {
   const [s, setS] = useState<Settings | null>(null)
   const [saved, setSaved] = useState(false)
+  const [usage, setUsage] = useState<TempUsage | null>(null)
+  const [clearing, setClearing] = useState(false)
+  const [cleared, setCleared] = useState('')
+  const [stripping, setStripping] = useState(false)
+  const [stripNote, setStripNote] = useState('')
   useEffect(() => {
     vault.settings().then(setS)
+    vault.tempUsage().then(setUsage)
   }, [])
   if (!s) return null
   const set = (p: Partial<Settings>) => {
@@ -751,6 +1185,79 @@ function SettingsPage({ onSaved }: { onSaved: () => void }) {
           >
             Change
           </button>
+        </div>
+      </div>
+      <div className={row}>
+        <span className="text-sm">Disk space</span>
+        <div className="flex flex-col items-start gap-2 text-sm">
+          {usage ? (
+            <>
+              <span>
+                Library {fmtBytes(usage.libraryBytes)}. Videos are {fmtBytes(usage.videoBytes)} of that, and each video is stored once.
+              </span>
+              <span className="text-secondary">
+                Temporary data {fmtBytes(usage.cacheBytes + usage.leftoverBytes)}: the browser cache and unfinished download pieces.
+              </span>
+            </>
+          ) : (
+            <span className="text-secondary">Checking folder sizes…</span>
+          )}
+          <div className="flex items-center gap-3">
+            <button
+              className="btn btn-sm"
+              disabled={clearing || !usage}
+              onClick={async () => {
+                setClearing(true)
+                setCleared('')
+                const r = await vault.clearTemp()
+                setUsage(r)
+                setClearing(false)
+                const bits = [`Cleared ${fmtBytes(r.freedBytes)}.`]
+                if (r.keptLeftovers) bits.push('Unfinished pieces stay until the download finishes.')
+                if (r.cacheBytes > 5 * 1024 * 1024) bits.push('Cache files still open are removed after you close the app.')
+                bits.push('Saved videos stay in the library.')
+                setCleared(bits.join(' '))
+              }}
+            >
+              {clearing ? 'Clearing…' : 'Clear temporary data'}
+            </button>
+            {cleared && <span className="text-xs text-secondary">{cleared}</span>}
+          </div>
+        </div>
+      </div>
+      <div className={row}>
+        <span className="text-sm">Personal information</span>
+        <div className="flex flex-col items-start gap-2 text-sm">
+          <span className="text-secondary">
+            Saved pages include the login cookie, request tokens, the Stripe id, the account email, and home-folder paths. Names on posts stay. Lessons and videos stay.
+          </span>
+          <div className="flex items-center gap-3">
+            <button
+              className="btn btn-sm"
+              disabled={stripping}
+              onClick={async () => {
+                if (!confirm('Remove the login cookie, request tokens, the Stripe id, the account email, and home-folder paths from the saved library? Names on posts stay. Lessons and videos stay. This cannot be undone.')) return
+                setStripping(true)
+                setStripNote('')
+                try {
+                  const r = await vault.stripPersonal()
+                  if (r.busy) setStripNote('A download is still saving. Wait until it finishes.')
+                  else if (!r.filesChanged) setStripNote(r.kept ? 'Nothing was changed. Some files were left so the viewer would stay intact.' : 'No personal information found in the library.')
+                  else {
+                    const bits = [`Removed personal information from ${r.filesChanged} file${r.filesChanged === 1 ? '' : 's'}.`]
+                    if (r.kept) bits.push(`${r.kept} file${r.kept === 1 ? ' was' : 's were'} left so the viewer would stay intact.`)
+                    setStripNote(bits.join(' '))
+                  }
+                } catch (e) {
+                  setStripNote(errText(e))
+                }
+                setStripping(false)
+              }}
+            >
+              {stripping ? 'Removing…' : 'Remove personal information'}
+            </button>
+            {stripNote && <span className="text-xs text-secondary">{stripNote}</span>}
+          </div>
         </div>
       </div>
       <div className={row}>

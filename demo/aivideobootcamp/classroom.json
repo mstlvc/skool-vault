@@ -1,0 +1,1871 @@
+{
+ "courses": [
+  {
+   "id": "f797a944a4d44f878528a3066c49f7f8",
+   "slug": "ace2d891",
+   "title": "🎯 Start Here",
+   "desc": "Begin Your Journey",
+   "cover": "media/819b674a56e9e26c6034.jpg",
+   "lessonCount": 8,
+   "items": [
+    {
+     "type": "set",
+     "id": "7b5b516151fa41d5a291128c53ee5688",
+     "title": "Course Overview",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "7422c1989cbe48a1ab564c268f7e320e",
+       "n": 1,
+       "title": "👋 Welcome",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "474a7f33668642e3899756454087968f",
+       "n": 2,
+       "title": "📚 How To Use The Course",
+       "html": "<p>If you ever feel stuck, post in the community or message Daniel!</p><p><br></p><p><br></p><p>When finished with each lesson, press the checkmark at the top of the page to complete it! This way you can see your progression.</p><img src=\"media/75cd4b63515ba0264cf2.png\" alt=\"e1abcebd076d459abb311f307bafca5c416af7d2ed5c4e92a8a202b6d8c7b921.png\" loading=\"lazy\"><p><br></p><p><br></p><p>When watching the lessons, ensure that the highest quality (1080p) is selected, and change the speed to your desired speed using the small settings icon! </p><p>(See photo below)</p><img src=\"media/6d84942c1355a9c7ffba.png\" alt=\"f9e910066f7f40ea819f7bba7a3a88cab31a8ecbf28d4424b3af9e963db78864.png\" loading=\"lazy\"><h2>You can also select &#39;Caption Language&#39; to have captions from your native language!</h2>",
+       "resources": [],
+       "posts": [],
+       "video": {
+        "source": "https://www.loom.com/share/9635370b42814ce5b53177d4b658779f",
+        "file": "videos/how-to-use.mp4",
+        "thumb": "media/how-to-use.jpg",
+        "durationMs": 6000
+       }
+      },
+      {
+       "type": "lesson",
+       "id": "49a8400ed9f44d68b0ae6b3a3ad12673",
+       "n": 3,
+       "title": "🗺️ Roadmap",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "9c435d1640ad495d881dce0a17b2c752",
+       "n": 4,
+       "title": "🧙 Levels & Rewards",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "2de79132fd66404082157861f2ca1729",
+       "n": 5,
+       "title": "⭐ Member Work!",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "64a5302835f6457c868259b1771661e6",
+       "n": 6,
+       "title": "🔥 Member Wins!",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "630531d881254034959a0ccc7cc074c8",
+       "n": 7,
+       "title": "💰 Challenges",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "709a126a76ed4044b92a0c27ba5739db",
+       "n": 8,
+       "title": "🎯 Your First Missions",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "3fc648ad8dd34470beed83d9e7bdbe75",
+   "slug": "3349da45",
+   "title": "AI Creator Foundations",
+   "desc": "Learn the foundations of AI creation",
+   "cover": "media/065c806debaae260062d.jpg",
+   "lessonCount": 10,
+   "items": [
+    {
+     "type": "set",
+     "id": "bac27cf2f6a641d9b76a56cabdda72f1",
+     "title": "⭐ Start Here",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "454efee1d0a84d13b545a9488a4d6e42",
+       "n": 1,
+       "title": "🧱 AI Creator Foundations",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "c57593d8c7d5405d83846d6974095e15",
+       "n": 2,
+       "title": "📚 Course Content",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "3768b04c9865410ea3980d8a7159d9d9",
+       "n": 3,
+       "title": "🛠️ The Tools",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "087217383c0f4dab96e15725ba11a457",
+     "title": "🎯 The Foundations",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "abbaa4b94c6d47629ed83587b8daac31",
+       "n": 4,
+       "title": "🪄 AI Models",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "cc975d647e7e43b3a1f6d9405229a562",
+       "n": 5,
+       "title": "💬 AI Chats",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "f37a341fc279490ab2c3c2949b726fee",
+       "n": 6,
+       "title": "🔁 AI Creator Workflow",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "2321c52e98c942f8af7faf3ff4775458",
+       "n": 7,
+       "title": "🧠 Prompting",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "bad989eea7784fe39ff343ecab47682d",
+       "n": 8,
+       "title": "🧠 Prompting 2",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "7abe83c9247c4efe81b1bad0c78866ef",
+     "title": "✅ Homework & Resources",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "06b65fe646ee49478cbee04dc7f6443d",
+       "n": 9,
+       "title": "🎯 Phase 2 Summary & Homework",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "581c7d16bf5c4ed7b15ebaedb9a9d416",
+       "n": 10,
+       "title": "📁 Resources",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "f3632b046b294f0d940405b69b650348",
+   "slug": "11e9be50",
+   "title": "AI Images",
+   "desc": "Master AI image creation & Editing",
+   "cover": "media/13cc5cb157e05167c35f.jpg",
+   "lessonCount": 23,
+   "items": [
+    {
+     "type": "set",
+     "id": "1019faf53e054d6da8293dcff61e7b44",
+     "title": "⭐ Start Here",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "c3da3f95a5b946848be3bcc67ec3286f",
+       "n": 1,
+       "title": "📚 AI Image Creation Basics",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "17ffbb9d6dc44504881afb6a41c5b90a",
+       "n": 2,
+       "title": "💫 Which Image Models To Use",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "631a6a9a874f4d8b8682acb613bcadd7",
+     "title": "🎨 AI Images",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "410ecf691dec4ee5bfdbc0b4360b26c7",
+       "n": 3,
+       "title": "👸 Creating AI Avatars",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "f8fa9448ee3c4be6ab404ec55622416c",
+       "n": 4,
+       "title": "📸 Influencer Studio (Easier Avatars)",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "6486f6ccee8c44bfa707cc674dda5d64",
+       "n": 5,
+       "title": "📌 Pinterest Inspiration",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "673da38963e642a5a374a8c327189aa3",
+       "n": 6,
+       "title": "✨ Avatar Product Images & Wise Chat",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "a944d22bf2104c7fa0fab2368c49d32e",
+       "n": 7,
+       "title": "👁️ Realism Cheat-sheet",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "607fba32765348fc9696ef5f55189e58",
+       "n": 8,
+       "title": "🍌 Image Editing With Nanobanana",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "458ac7b5239a4500aac9999c19f17877",
+       "n": 9,
+       "title": "⚡ Image Editing With Canva",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "7acd4fd61df34f3eb3274c440a8a8ed3",
+       "n": 10,
+       "title": "🪄 Ideogram 4.5 Image Editing (NEW)",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "6ecdbc87eed94d7593a18a837b599e70",
+       "n": 11,
+       "title": "📸 Realism Pro for Images (NEW)",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "c855ed6e327048d3bb51e123902a0d99",
+     "title": "🧠 Advanced Image Prompting",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "9ef5a287b982435daa42400a0429b03d",
+       "n": 12,
+       "title": "🔥 Depth & Cinematic Framing",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "b158a2e16067416f81ce69f6a3fefe9a",
+       "n": 13,
+       "title": "💡 Lighting & Mood",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "bbafc11c71dd4444bbc54d7c492e655f",
+       "n": 14,
+       "title": "📸 Camera Angles & Techniques",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "7d304fb84f4a42b4b3a638ee55586b87",
+     "title": "💎 Prompt Banks",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "5df38721c21342e886457878951c3904",
+       "n": 15,
+       "title": "🔒Prompt Bank",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "5f2cc6112ea14862a7d51e25a259c63e",
+       "n": 16,
+       "title": "🔒Prompt Bank 2",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "936203cebd714c39a65b555f27766956",
+       "n": 17,
+       "title": "🔒 UGC Avatar Prompt Bank",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "b6ea42b7467c4d678f0825985f2a1bcb",
+     "title": "⭐ Other",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "341a26d0a74543cfad0e1324558a5318",
+       "n": 18,
+       "title": "✨ Upscaling to 4k",
+       "html": "<p>This is something a lot of people sleep on 👇</p><p>You don’t need to keep generating the same image over and over trying to get it “sharper” or “more real.”</p><p>If you already have a good base image — if its not perfect or slightly blurred —NanoBanana Pro or GPT image 2.0 will upscale it to true 4K while keeping the original vision intact.</p><p>🔧 What they do that other upscalers don’t:</p><li><p>Keeps the original style &amp; character identity (it doesn’t repaint)</p></li><li><p>Adds realistic micro-details — skin pores, hair texture, fabric fibers, fine edges</p></li><li><p>Cleans compression noise + blurry patches</p></li><li><p>Preserves composition, lighting, and form</p></li><p>So for example, if you generate an image that you LOVE, but the quality isn&#39;t quite there, you can just upload to the image models and increase it within seconds. This applies for all images, not just faces.</p><p>💥REMEMBER you need to UPSCALE before you animate! </p><p>The higher the quality of the image you throw into the video generators the more pixels it has to work with, meaning the end result is overall higher quality.</p><p>I always upscale images for:</p><li><p>Portraits</p></li><li><p>All of my FILMS</p></li><li><p>All of my ADS</p></li><li><p>Product shots</p></li><li><p>Frames I’m sending for animation</p></li><p>You can use a simple prompt like 👇</p><p>&#39;Upscale this image to true ultra-realistic 4K. Preserve the original composition, lighting, and character identity.&#39;</p><p>Or you can use Promptwise inbuilt upscaler (Phase 6)</p><p>Hope this helps 🚀</p><img src=\"media/8b2bf1321c66cdce4f51.jpg\" alt=\"8cefc5b1-afee-4980-831b-d2486d6e3a07 (1).png\" loading=\"lazy\"><img src=\"media/f90379cade58590349fc.jpg\" alt=\"ce1c57ea-ff47-4159-98d6-efa92c3a9806 (2).png\" loading=\"lazy\"><img src=\"media/e77baeb361f1f847c7aa.jpg\" alt=\"7e34ae1e-e8f0-43ba-85b7-28238d7cce25 (1).png\" loading=\"lazy\"><img src=\"media/529e11f86d4a18cef72c.jpg\" alt=\"8595e3ec-9235-43ad-91f4-3c1bb421940c (1).png\" loading=\"lazy\">",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "87b3ddd4e07e4d5cbc48e80b6b998cc8",
+       "n": 19,
+       "title": "🧑‍🎨 Using Midjourney (Optional)",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "c59050c7a3fe468bace34ddec230b3f3",
+       "n": 20,
+       "title": "🧑‍🎨 Midjourney Update (Optional)",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "a044d738263f4dcda6ef5980d5594ada",
+     "title": "✅ Homework & Summary",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "a5141690683f4f1bb00fff9eb0718f3c",
+       "n": 21,
+       "title": "🎯 Phase 3 Homework & Summary",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "9d90106eb50d43348117ced009bf40e8",
+       "n": 22,
+       "title": "📁 Resources",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "6014c2acce9c4e409bb0f4e5c9edaaed",
+       "n": 23,
+       "title": "🏆 GET INVOLVED!",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "d090c89ee54c45aba72bf08b56925d55",
+   "slug": "049622b6",
+   "title": "AI Videos",
+   "desc": "Craft stunning AI videos",
+   "cover": "media/6f30cf3c263bc7bb6207.jpg",
+   "lessonCount": 14,
+   "items": [
+    {
+     "type": "set",
+     "id": "3f997c9d75fe4d67b1baaa208a67a7d9",
+     "title": "⭐ Start Here",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "89771ab374dc43b58a9ce2b8666e427b",
+       "n": 1,
+       "title": "🎥 AI Video Basics",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "9932d788591d44dfbc8ddf9efad37b84",
+       "n": 2,
+       "title": "💫 Which Video Models To Use",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "96ad848637224203bc7bbb1c911a0133",
+     "title": "▶️ AI Video Guides",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "c2045f89585947678abd1768c4851ba0",
+       "n": 3,
+       "title": "🎥 Kling 3.0",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "29b6546a48a74d4fad7657a2291d4309",
+       "n": 4,
+       "title": "🔥 Seedance 2.0 (Check below for Seedance 2.5)",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "603b0f11c98a48b59042766207b7dbd7",
+       "n": 5,
+       "title": "🎬 AI Video Editing (Gemini Vs Seedance)",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "f981619ca2e04c6eb50a721d949cb80a",
+       "n": 6,
+       "title": "📷 Camera Movement Guide",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "e3ea788e3e6c48a4a0f713c0b47945f7",
+       "n": 7,
+       "title": "🚀 AI Lipsync Test",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "2f0aa082931648c5ae7620bcece4c882",
+       "n": 8,
+       "title": "❌ Removing the 'AI' Look",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "58604d6570cf47f58c5a2a495d4c6c3e",
+       "n": 9,
+       "title": "🙋‍♀️ Kling Motion Control",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "b0f04241197947dd818a63fbd46392ee",
+       "n": 10,
+       "title": "🎙️ Consistent Character Voices",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "fe0c3a0d94e746e7bbb55479abc52eb7",
+     "title": "🔊 Editing & Sound Effects",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "f122fc97587b46caa2be0cef2b4dc5a0",
+       "n": 11,
+       "title": "✂️ Mastering Capcut",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "27850deeb97b451883e40c66ebaa70cf",
+       "n": 12,
+       "title": "💥 Sound Effects",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "273b7f59fda64726b21b1316f22da586",
+     "title": "✅ Homework & Resources",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "29a034b3d08c4f148932ea480af19728",
+       "n": 13,
+       "title": "🎯 Phase 4 Summary & Homework",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "f9090148e53d487888cca75193f7faf7",
+       "n": 14,
+       "title": "📁 Resources",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "a08e7d8a906f448789a84ba4caf19567",
+   "slug": "950d18f8",
+   "title": "AI Advertising & UGC",
+   "desc": "Create scroll-stopping Ads that convert",
+   "cover": "media/bebbeb6fbf9f6b9631ac.jpg",
+   "lessonCount": 16,
+   "items": [
+    {
+     "type": "set",
+     "id": "a268d0256478407991d3f5bb533a40c4",
+     "title": "⭐ Start Here",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "4a6c473d703a4e00a48c5044cba9c783",
+       "n": 1,
+       "title": "⚡ AI Advertisement",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "00a52473b41d49709f31636599b3599c",
+       "n": 2,
+       "title": "🎯 What Makes An Advert Good?",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "02592b47157d46c992193dba62405041",
+     "title": "🙋 Realistic Avatar Ads",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "7d07de49a7cc4d299f7dbe61e679220b",
+       "n": 3,
+       "title": "🤯 Insane Avatar Adverts",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "a0799a6632cc4e6881f219d29ad3330e",
+       "n": 4,
+       "title": "🔥 Avatar Ads on Autopilot",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "bcd0c5434fd74009a43e771e48c9d0f5",
+       "n": 5,
+       "title": "🎥Seedance 2.5 Short-film Explanation + Avatar Ads",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "ec80b7eac44f4f1d9d81c49b02a48592",
+     "title": "🎥 AI Video Ads",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "71d00869790442ffb1e4051bc1731fca",
+       "n": 6,
+       "title": "🎙️ Podcast Ads",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "583740af7d124258ad525eabfe20720c",
+       "n": 7,
+       "title": "🎨 2D Animation Ads",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "21c4f55fc4ae457dbb524c7412f51c87",
+       "n": 8,
+       "title": "🗿 Claymation Ads",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "cbdd8e0cc1fb444f85497635b7bee973",
+       "n": 9,
+       "title": "👟 Making A Nike Advert",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "343de6337b594a06adec3b1b7cf5adce",
+       "n": 10,
+       "title": "🚗 Making A Car Advert",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "1ba52f88604b47eca28b161c93f2ade8",
+       "n": 11,
+       "title": "🎮 GTA Style Video Ads",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "cd6eeb852c3d4126970a6a8eafeb3e4e",
+     "title": "🖼️ Static Ads",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "b159d48aa3274765a2f8b994f02d3bfa",
+       "n": 12,
+       "title": "🍌 Nanobanana Pro for Static Ads & Product Images",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "f61a1e516ce54d9a9a32f91e0dfea0b1",
+     "title": "▶️ Some Examples",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "b842ba1727c444e7a52c55d6c3e220b8",
+       "n": 13,
+       "title": "👟 Nike Ad",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "537e591bd66541588a753a9b3c151189",
+       "n": 14,
+       "title": "🚗 BMW Ad",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "5433433ac9584620a71fdbc8ae8370b5",
+     "title": "✅ Homework & Resources",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "39ca91aca431463a95ad7de511ac1e7a",
+       "n": 15,
+       "title": "🎯 Phase 5 Homework & Summary",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "bd566e8b7f054cf180ebeab6af612bad",
+       "n": 16,
+       "title": "📁 Resources",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "7792b384e921420c9c9e564e4a89ef35",
+   "slug": "54fdc718",
+   "title": "Advanced Flows",
+   "desc": "10x your output with node based workflow systems",
+   "cover": "media/ca76f547b30c3bcc4de3.jpg",
+   "lessonCount": 10,
+   "items": [
+    {
+     "type": "set",
+     "id": "9f08590643c443e8ba66d7b91a51be59",
+     "title": "⭐ Start Here",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "1ce1ce7825ce44bd83ca6d8427aa1cd9",
+       "n": 1,
+       "title": "👋 Flows Intro",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "2dd88abd3f7343b1994470f818da4aba",
+       "n": 2,
+       "title": "📚 Flows Overview",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "bff9c61f7c3e418d8cfd1d1fbb932ed2",
+     "title": "⚡ Advanced Flows",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "5199d7e775474fe48b8bf694a97186cb",
+       "n": 3,
+       "title": "🎨 Image Generators",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "a2c09961588b4a5396d8d188e8ac7d4f",
+       "n": 4,
+       "title": "🎥 Video & Audio Generators",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "427397cdc86f40ada0f85fdd873c6c01",
+       "n": 5,
+       "title": "⚙️ Flows Toolkit",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "d145e03b6bdd449c8edd6edf2cfa7d1d",
+       "n": 6,
+       "title": "🪄 MagicFlow",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "0dfbdc8bdb944b3186aee671b1f037a3",
+       "n": 7,
+       "title": "⏱️ Creating an AD in less than 10 Minutes",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "5a2e2c9937314f4db32cc945f42389af",
+     "title": "🔥 Promptwise MCP",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "fa11b880abe745238e18cde7bd693897",
+       "n": 8,
+       "title": "⚡Connecting Claude & ChatGPT to Promptwise (MCP)",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "5a34c48aa2414b529f4ae786e0519531",
+     "title": "✅ Homework & Resources",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "d9313f2c7ecf42dca079f9e9de25c8e5",
+       "n": 9,
+       "title": "🎯 Phase 6 Homework & Summary",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "bb99129d08cd4c8ea28aea0e1a1834a1",
+       "n": 10,
+       "title": "📁 Resources",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "28a188afd2074f648325d18cecf7b4e8",
+   "slug": "eb3a4f2c",
+   "title": "Social Media & Going Viral",
+   "desc": "Dominate social channels & reach virality",
+   "cover": "media/bf03fbd3b7cb7cdf25cd.jpg",
+   "lessonCount": 23,
+   "items": [
+    {
+     "type": "set",
+     "id": "19ca459dc81643a0a7791e21fbd2fdc8",
+     "title": "⭐ Start Here",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "798ec4017de146ec8df84e204ce52bd7",
+       "n": 1,
+       "title": "🚀 Social Media Domination",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "f0534ac2ca7a4134a315812dbf610d9b",
+     "title": "📱 Social Media",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "68388b0163094f719655008a4a6b201f",
+       "n": 2,
+       "title": "🎯 Choosing A Platform",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "6213136f2e274ac0848e566cf04c52a4",
+       "n": 3,
+       "title": "🧠 Mindset & Plan",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "c2d6fd34d6ca4cce8450821c9362bac6",
+       "n": 4,
+       "title": "🚀 What Makes A Video Viral?",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "ed28927c16114eadb0672e1e3e998a7d",
+       "n": 5,
+       "title": "✨ Channel Branding Guide",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "af37701d3d694f64b72567ca2f5d2085",
+       "n": 6,
+       "title": "⚙️ Posting Videos & Upload Settings",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "1256fb2d94d8488ab460e1cc8329f713",
+     "title": "🔥 Viral Niches",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "5ee9d64f5ccb4c6bab0a416dcfd4c341",
+       "n": 7,
+       "title": "⭐ What's this for?",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "2a19efc2b1b745b599a3c1613994479b",
+       "n": 8,
+       "title": "🏟️ Stadium Cam Niche",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "e1648a229b9847988c82edbc699f4d70",
+       "n": 9,
+       "title": "🎬 Live filmset Niche",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "b9bb8655f58e48d2b89e4ebbada8f748",
+       "n": 10,
+       "title": "🧬 Evolutions Niche",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "91e9163fc7a2417e8a1eaa65c597a537",
+       "n": 11,
+       "title": "👀 POV Niche",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "6fb8b3f6e1ee4a6b89a3a616aaf809b3",
+       "n": 12,
+       "title": "🐾 Animal Hybrid Fusion",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "9878aef49bad4e3fb099cafcfb72844c",
+       "n": 13,
+       "title": "🧪 Animal Fusion Niche",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "919e40567b7d4c0f8da7a521a9d0c148",
+       "n": 14,
+       "title": "🦁 Animals Niche",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "cef9a6863cc6497dacdb292b64245e69",
+       "n": 15,
+       "title": "🧀 Tim Cheese Niche",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "1401ec2516994a5dae0e03187aa089e8",
+       "n": 16,
+       "title": "🍓 Fruit Creations Niche",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "3beb2b8b67574b41b72db164b902acb7",
+       "n": 17,
+       "title": "🔍 Miniature Niche",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "2a1f3e2820334c72b1489ac61c70ffbf",
+       "n": 18,
+       "title": "⚔️ Knights Niche",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "aa605219401d4e29bb13fa0fea8bb122",
+       "n": 19,
+       "title": "🐙 Sea Monsters Niche",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "cd6a77acf57f44cda6a0c0b4b566d67e",
+       "n": 20,
+       "title": "🐊 Crocodilo Niche",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "ff2851d4984941e8b7d48cc757c93992",
+       "n": 21,
+       "title": "🐱 Cats Niche",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "221fab0f64224aeda0f6290b4b0f89d8",
+     "title": "✅ Homework & Resources",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "bb81fcc861854fda8491728e395178a0",
+       "n": 22,
+       "title": "🎯 Phase 7 Homework & Summary",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "ab6eed1860ae4359af7dd07fb7cc9f98",
+       "n": 23,
+       "title": "📁 Resources",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "c1ec334d15154d449e0b780d62c9ec5d",
+   "slug": "e6558780",
+   "title": "AI Filmmaking",
+   "desc": "Become a film-maker using AI",
+   "cover": "media/e73b25f30a063965d28b.jpg",
+   "lessonCount": 9,
+   "items": [
+    {
+     "type": "set",
+     "id": "95ee519b188741ba9094e1f5a8243122",
+     "title": "⭐ Start Here",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "5a4e963d3a894b48829c0f8f026c3816",
+       "n": 1,
+       "title": "🎬 AI Filmmaking",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "83c69265efb449c4b52f6782b12eb3cd",
+       "n": 2,
+       "title": "✨ How AI Is Changing Filmmaking",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "52e46e9364d14db5ac53f964b4efc279",
+     "title": "🎥 AI Filmmaking",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "c71ee32c68c144a7ad43a1160b69cbcf",
+       "n": 3,
+       "title": "Storytelling & ChatGPT Scriptwriting",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "10216b7a662b4368838e856c816de244",
+       "n": 4,
+       "title": "Planning Motion",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "0c5fb619953046c8a8f30f7719c5d0b1",
+       "n": 5,
+       "title": "Bringing It Together, Creating Shortfilms",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "840715a607dd4475a99a7e7155eae527",
+       "n": 6,
+       "title": "Animation",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "b0a188f9b65348d09b17728ad3cf78d9",
+     "title": "▶️ Some Examples",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "0f209616109147ad9479ea8a419a02e2",
+       "n": 7,
+       "title": "Frostfall",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "664b42d9d02a46eea8c31188429910fe",
+       "n": 8,
+       "title": "World Of Warcraft",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "cc7a4504f5954a0094c9637b427e0258",
+     "title": "✅ Homework & Resources",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "4c5cf90519734641a137a89a152716b0",
+       "n": 9,
+       "title": "🎯 Phase 8 Homework & Summary",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "a42317bbf173447a8bc1aac148412a6b",
+   "slug": "436ea398",
+   "title": "Clone Yourself",
+   "desc": "Clone yourself & automate your content",
+   "cover": "media/34434270eb8707d3e5bc.jpg",
+   "lessonCount": 12,
+   "items": [
+    {
+     "type": "set",
+     "id": "17f1eaeab86a4d65a321f8a601c4921a",
+     "title": "⭐ Start Here",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "ab70e148c0e44e659a8eba334baef938",
+       "n": 1,
+       "title": "🚀 Cloning Yourself",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "64e82bc2b2434628aa0edc1a20e1037e",
+     "title": "🎯 Cloning",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "e7e7c2e77f3e4dcb9079208ae2e97296",
+       "n": 2,
+       "title": "How To Clone Yourself",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "c1bd4472af5c4311b4cbc917919a6041",
+       "n": 3,
+       "title": "Customising Your Clone",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "672b0a7bc21045939f9a3354c4a05bc8",
+       "n": 4,
+       "title": "Cloning Your Voice",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "9557f7136db546b09309e772dcb5b1b5",
+       "n": 5,
+       "title": "Headshot Lip-sync Videos With Heygen",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "f334e323ca5d4cfab4dcbb488a945149",
+       "n": 6,
+       "title": "Longform Content",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "450808fe08e54d4982260c467352bde5",
+       "n": 7,
+       "title": "Monetising Clones",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "a262f22f13d64bccaba955b5c0ab0a76",
+       "n": 8,
+       "title": "One Clone, Many Jobs",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "268f1101474e43b1929a95c66e2c8849",
+       "n": 9,
+       "title": "ChatGPT for Content",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "2223eab681e7481b8aadeb20a94b77aa",
+       "n": 10,
+       "title": "Further Tips",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "set",
+     "id": "58f45734c9a841f4afdf271ca998a994",
+     "title": "✅ Homework & Resources",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "bffec5568e10499f911e7f9c9f3cb1e0",
+       "n": 11,
+       "title": "🎯 Phase 9 Homework & Summary",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "71cf50c1ff734d7a9df6230df2a381a3",
+       "n": 12,
+       "title": "📁 Resources",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "bd22671e04b04c089f823e28db5bfe53",
+   "slug": "13d3eab4",
+   "title": "💸 Live Calls + Monetization Extras",
+   "desc": "A few more ways to monetize with AI!",
+   "cover": "media/491bd8a09c14addf1ad4.jpg",
+   "lessonCount": 6,
+   "items": [
+    {
+     "type": "lesson",
+     "id": "c3c3948a792b4d9cbf261d1165c14986",
+     "n": 1,
+     "title": "Starting An AI Agency 🚀",
+     "html": "",
+     "resources": [],
+     "posts": [],
+     "video": null
+    },
+    {
+     "type": "set",
+     "id": "b52af0c0c05f4651a16be1757e75150e",
+     "title": "⭐ Live Calls",
+     "items": [
+      {
+       "type": "lesson",
+       "id": "0e3118b1ea3d436b8f71a45039a7a49e",
+       "n": 2,
+       "title": "💸 Live Call - AI Video Workshop",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "efd150b36add44febd6a08cca45b9ef8",
+       "n": 3,
+       "title": "💸 Live Call - Starting an AI Agency",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      },
+      {
+       "type": "lesson",
+       "id": "47f4da13eff74d6c94bd9dc71b06f907",
+       "n": 4,
+       "title": "💸 Live Call - Scale anything with AI",
+       "html": "",
+       "resources": [],
+       "posts": [],
+       "video": null
+      }
+     ]
+    },
+    {
+     "type": "lesson",
+     "id": "761244c39b8f467791e8a26a0695c3ed",
+     "n": 5,
+     "title": "AI Client Acquisition & Website Building",
+     "html": "",
+     "resources": [],
+     "posts": [],
+     "video": null
+    },
+    {
+     "type": "lesson",
+     "id": "7c9092909c12400a9e696bee19459bcd",
+     "n": 6,
+     "title": "Community Monetization Ideas",
+     "html": "",
+     "resources": [],
+     "posts": [],
+     "video": null
+    }
+   ]
+  },
+  {
+   "id": "3e5c41143f824be387486ad21b4eb6a9",
+   "slug": "4f442c7c",
+   "title": "⚡Earn Affiliate Commissions",
+   "desc": "Your affiliate link is your key - it lets you earn money every time you bring someone into the community!",
+   "cover": "media/a68f579a680fffaf3d1f.jpg",
+   "lessonCount": 1,
+   "items": [
+    {
+     "type": "lesson",
+     "id": "5bdf5d141d5c4d25befa5c6779156b9e",
+     "n": 1,
+     "title": "How To Grab Your Personal Affiliate Link",
+     "html": "",
+     "resources": [],
+     "posts": [],
+     "video": null
+    }
+   ]
+  },
+  {
+   "id": "d2d8898eb44a47ff9d0f9e8937eee3a1",
+   "slug": "5813f00e",
+   "title": "⭐ The Golden Ticket",
+   "desc": "Lifetime Access To The Community",
+   "cover": "media/4392dfe61d0209720d13.jpg",
+   "lessonCount": 1,
+   "items": [
+    {
+     "type": "lesson",
+     "id": "c705bf4e623040db8903a31586d128d1",
+     "n": 1,
+     "title": "🎉 Congratulations!",
+     "html": "",
+     "resources": [],
+     "posts": [],
+     "video": null
+    }
+   ]
+  },
+  {
+   "id": "694e9ac226ea4dd89904698d1afccd4a",
+   "slug": "bdd0e062",
+   "title": "🗝️ Level 2",
+   "desc": "Earn the Apprentice Title For Your Profile",
+   "cover": "media/513e22f76d7a33a0e400.jpg",
+   "lessonCount": 1,
+   "items": [
+    {
+     "type": "lesson",
+     "id": "a9288cad1f8c45569f630ed9669bffe5",
+     "n": 1,
+     "title": "Congratulations on reaching level 2!",
+     "html": "",
+     "resources": [],
+     "posts": [],
+     "video": null
+    }
+   ]
+  },
+  {
+   "id": "566a7b2f25ef4d218e8c4affb10babc0",
+   "slug": "4b4584d4",
+   "title": "🎨 Level 3",
+   "desc": "Earn the Creator Title For Your Profile",
+   "cover": "media/364f206fcf5934d65928.jpg",
+   "lessonCount": 1,
+   "items": [
+    {
+     "type": "lesson",
+     "id": "db0c3b86e2eb423da40dc5c5cf68a1e8",
+     "n": 1,
+     "title": "Congratulations on reaching level 3!",
+     "html": "",
+     "resources": [],
+     "posts": [],
+     "video": null
+    }
+   ]
+  },
+  {
+   "id": "3e9badabefd54e39a42b914f09851651",
+   "slug": "678cbef2",
+   "title": "🏛️ Level 4",
+   "desc": "Earn the Architect Title For Your Profile",
+   "cover": "media/45c40ee81c8554dbc4ea.jpg",
+   "lessonCount": 1,
+   "items": [
+    {
+     "type": "lesson",
+     "id": "d289664d9703437287e12ccac114b06f",
+     "n": 1,
+     "title": "Congratulations on reaching level 4!",
+     "html": "",
+     "resources": [],
+     "posts": [],
+     "video": null
+    }
+   ]
+  },
+  {
+   "id": "5b4620f5cae24f06874b73f2cb6d890c",
+   "slug": "695a8f00",
+   "title": "🧙 Level 5",
+   "desc": "Earn the AI Wizard Title For Your Profile",
+   "cover": "media/8e604e4f539de37e4139.jpg",
+   "lessonCount": 1,
+   "items": [
+    {
+     "type": "lesson",
+     "id": "57b83cd0922d470f9af150878957f7dc",
+     "n": 1,
+     "title": "Congratulations on reaching level 5!",
+     "html": "",
+     "resources": [],
+     "posts": [],
+     "video": null
+    }
+   ]
+  },
+  {
+   "id": "1f5fe7b894f24ff6869e3fff308659d6",
+   "slug": "f33cce3a",
+   "title": "🔥 Level 6",
+   "desc": "Earn the Elite Member Title For Your Profile",
+   "cover": "media/9000c0a53d8667ce48af.jpg",
+   "lessonCount": 1,
+   "items": [
+    {
+     "type": "lesson",
+     "id": "5bdf06d7738244e593881cf974f6a2a1",
+     "n": 1,
+     "title": "Congratulations on reaching level 6!",
+     "html": "",
+     "resources": [],
+     "posts": [],
+     "video": null
+    }
+   ]
+  },
+  {
+   "id": "dba135f8b98447849109d9388b9173b2",
+   "slug": "c9842859",
+   "title": "⚔️ Level 7",
+   "desc": "Earn the Mentor Title For Your Profile",
+   "cover": "media/c2313d519b637b34bfd9.jpg",
+   "lessonCount": 1,
+   "items": [
+    {
+     "type": "lesson",
+     "id": "f2bd4ef0678e4464ab251e4656cc772e",
+     "n": 1,
+     "title": "Congratulations on reaching level 7!",
+     "html": "",
+     "resources": [],
+     "posts": [],
+     "video": null
+    }
+   ]
+  },
+  {
+   "id": "3976b3d8d0e3404f83dd1e155913445b",
+   "slug": "8dd312d1",
+   "title": "💎 Level 8",
+   "desc": "FREE Lifetime Membership + Grandmaster Title",
+   "cover": "media/3696b01c3d785a93377f.jpg",
+   "lessonCount": 1,
+   "items": [
+    {
+     "type": "lesson",
+     "id": "baaebf2847854890970960102a9e7e82",
+     "n": 1,
+     "title": "Congratulations on reaching level 8!",
+     "html": "",
+     "resources": [],
+     "posts": [],
+     "video": null
+    }
+   ]
+  },
+  {
+   "id": "6b781672c4bc4c3cb2cdabc5a30d0e67",
+   "slug": "33377885",
+   "title": "👑 Level 9",
+   "desc": "$100 Reward + The Oracle Title",
+   "cover": "media/75d96401f73c8d379247.jpg",
+   "lessonCount": 1,
+   "items": [
+    {
+     "type": "lesson",
+     "id": "76a328fc4ee641bb8ab42dd7feca2b91",
+     "n": 1,
+     "title": "Congratulations on reaching level 9!",
+     "html": "",
+     "resources": [],
+     "posts": [],
+     "video": null
+    }
+   ]
+  }
+ ]
+}

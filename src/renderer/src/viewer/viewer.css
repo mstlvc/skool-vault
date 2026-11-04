@@ -348,6 +348,49 @@ img {
   gap: 12px;
   justify-content: space-between;
 }
+.pager {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 0 2px;
+}
+.pager-btn {
+  display: inline-grid;
+  place-items: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.pager-btn:hover:not(:disabled):not(.active) {
+  background: var(--hover);
+}
+.pager-btn.active {
+  background: #3c3c3c;
+  color: #fff;
+}
+[data-theme='dark'] .pager-btn.active {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+.pager-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.pager-btn:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+.pager-gap {
+  min-width: 24px;
+  text-align: center;
+  color: var(--muted);
+}
 .post-card {
   padding: 18px 20px 14px;
   cursor: pointer;
@@ -526,6 +569,9 @@ img {
   background: rgba(0, 0, 0, 0.55);
   overflow-y: auto;
   padding: 40px 16px;
+  /* The card's close button sits over the title bar. A drag region ignores
+     clicks on whatever is painted above it until that layer opts out. */
+  -webkit-app-region: no-drag;
 }
 .modal {
   position: relative;
@@ -537,12 +583,14 @@ img {
   position: absolute;
   top: 14px;
   right: 14px;
+  z-index: 2;
   width: 36px;
   height: 36px;
   display: grid;
   place-items: center;
   border-radius: 50%;
   color: var(--muted);
+  -webkit-app-region: no-drag;
 }
 .modal-close:hover {
   background: var(--hover);
@@ -755,6 +803,7 @@ img {
   display: grid;
   place-items: center;
   cursor: zoom-out;
+  -webkit-app-region: no-drag;
 }
 .lightbox img {
   max-width: 94vw;

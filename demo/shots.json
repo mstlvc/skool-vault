@@ -1,0 +1,21 @@
+{
+  "slug": "aivideobootcamp",
+  "name": "AI Video Bootcamp",
+  "logo": "media/3b4d744ef5464607b540.jpg",
+  "imageLesson": {
+    "courseId": "f3632b046b294f0d940405b69b650348",
+    "lessonId": "341a26d0a74543cfad0e1324558a5318",
+    "title": "✨ Upscaling to 4k"
+  },
+  "videoLesson": {
+    "courseId": "f797a944a4d44f878528a3066c49f7f8",
+    "lessonId": "474a7f33668642e3899756454087968f",
+    "title": "📚 How To Use The Course"
+  },
+  "postId": "77076f5257004e8fad5069d62737f4b5",
+  "expandCourse": "🎯 Start Here",
+  "job": {
+    "phase": "Classroom: AI Videos",
+    "current": "🎥 Kling 3.0"
+  }
+}

@@ -3,11 +3,14 @@ import appIcon from '../../build/icon.png?asset'
 import { join } from 'path'
 import type { Account, DownloadOptions, JobState, Settings } from '../shared/types'
 import { groupDir, listLibrary } from './archive'
-import { DownloadJob, listRemoteGroups, scanGroup } from './scraper'
+import { courseOutline, DownloadJob, listRemoteGroups, scanGroup } from './scraper'
 import { lanUrls, restartServer, serverPort, startServer } from './server'
 import { getSettings, newAccessKey, saveSettings, speedProfile } from './settings'
 import { onRemoteChange, refreshRemoteLink, remoteState, startRemote, stopRemote } from './tunnel'
-import { isLoggedIn, logout, openLoginWindow, PageLoader } from './skool'
+import { activate, activeAccount, createAccount, deleteAccount, hasActiveAccount, noteActive, viewAccount } from './accounts'
+import { closeSkoolWindow, isLoggedIn, logout, openLoginWindow, openSkoolWindow, PageLoader } from './skool'
+import { stripLibrary } from './strip'
+import { clearTemporary, tempUsage } from './temp'
 
 const rendererDir = join(__dirname, '../renderer')
 const devUrl = process.env.ELECTRON_RENDERER_URL
@@ -65,18 +68,32 @@ function createMain() {
   else main.loadFile(join(rendererDir, 'index.html'))
 }
 
-async function account(): Promise<Account> {
-  const loggedIn = await isLoggedIn()
-  if (!loggedIn) return { loggedIn }
-  if (!me) {
-    try {
-      me = (await listRemoteGroups(getLoader())).me
-    } catch {
-      /* show as logged in without details */
-    }
-  }
+function rememberMe(loggedIn: boolean) {
+  if (!loggedIn) me = null
   const name = me ? [me.firstName, me.lastName].filter(Boolean).join(' ') || me.name : undefined
-  return { loggedIn, name, avatar: me?.metadata?.pictureBubble || null }
+  noteActive(me ? { loggedIn, name, avatar: me?.metadata?.pictureBubble || null } : { loggedIn })
+}
+
+async function account(): Promise<Account> {
+  if (!hasActiveAccount()) return viewAccount(false)
+  const loggedIn = await isLoggedIn()
+  rememberMe(loggedIn)
+  return viewAccount(loggedIn)
+}
+
+function ensureIdle() {
+  if ([...jobs.values()].some((j) => j.state.status === 'running')) {
+    throw new Error('Cancel the download before changing accounts.')
+  }
+}
+
+function closeSurfaces() {
+  // The hidden browser clears request hooks on the session that is active right now,
+  // so it has to go before the active account changes.
+  loader?.destroy()
+  loader = null
+  closeSkoolWindow()
+  me = null
 }
 
 function registerIpc() {
@@ -100,6 +117,7 @@ function registerIpc() {
 
   ipcMain.handle('account:get', () => account())
   ipcMain.handle('account:login', async () => {
+    if (!hasActiveAccount()) createAccount()
     await openLoginWindow(main || undefined)
     me = null
     return account()
@@ -110,13 +128,41 @@ function registerIpc() {
     me = null
     return account()
   })
+  ipcMain.handle('account:switch', async (_e, id: string) => {
+    if (typeof id !== 'string' || !id) throw new Error('That account is not on this PC.')
+    ensureIdle()
+    if (hasActiveAccount() && activeAccount().id === id) return account()
+    closeSurfaces()
+    activate(id)
+    me = null
+    return account()
+  })
+  ipcMain.handle('account:add', async () => {
+    ensureIdle()
+    closeSurfaces()
+    createAccount()
+    await openLoginWindow(main || undefined)
+    me = null
+    return account()
+  })
+  ipcMain.handle('account:remove', async (_e, id: string) => {
+    if (typeof id !== 'string' || !id) throw new Error('That account is not on this PC.')
+    ensureIdle()
+    if (hasActiveAccount() && activeAccount().id === id) closeSurfaces()
+    await deleteAccount(id)
+    me = null
+    return account()
+  })
 
   ipcMain.handle('groups:remote', async () => {
     const r = await listRemoteGroups(getLoader())
     me = r.me || me
+    if (me) rememberMe(true)
     return r.groups
   })
   ipcMain.handle('groups:scan', (_e, slug: string) => scanGroup(getLoader(), slug))
+  ipcMain.handle('groups:outline', (_e, slug: string, courseSlug: string) => courseOutline(getLoader(), slug, courseSlug))
+  ipcMain.handle('skool:open', (_e, url?: string) => openSkoolWindow(typeof url === 'string' ? url : undefined))
 
   ipcMain.handle('job:start', (_e, opts: DownloadOptions) => {
     const running = [...jobs.values()].find((j) => j.state.slug === opts.slug && j.state.status === 'running')
@@ -129,6 +175,8 @@ function registerIpc() {
     return job.state.id
   })
   ipcMain.handle('job:cancel', (_e, id: string) => jobs.get(id)?.cancel())
+  ipcMain.handle('job:pause', (_e, id: string) => jobs.get(id)?.pause())
+  ipcMain.handle('job:resume', (_e, id: string) => jobs.get(id)?.resume())
   ipcMain.handle('job:list', () => [...jobs.values()].map((j) => j.state))
   ipcMain.handle('job:clear', () => {
     for (const [id, j] of jobs) if (j.state.status !== 'running') jobs.delete(id)
@@ -155,6 +203,14 @@ function registerIpc() {
   })
   ipcMain.handle('viewer:external', (_e, slug?: string) => shell.openExternal(viewerUrl(slug)))
   ipcMain.handle('folder:show', (_e, slug?: string) => shell.openPath(slug ? groupDir(slug) : getSettings().libraryDir))
+
+  ipcMain.handle('storage:usage', () => tempUsage())
+  ipcMain.handle('storage:clear', () => clearTemporary([...jobs.values()].some((j) => j.state.status === 'running')))
+  ipcMain.handle('library:strip', () => {
+    if ([...jobs.values()].some((j) => j.state.status === 'running'))
+      return { groups: 0, filesChanged: 0, cookiesRemoved: 0, kept: 0, busy: true }
+    return stripLibrary(getSettings().libraryDir)
+  })
 
   ipcMain.handle('settings:get', () => getSettings())
   ipcMain.handle('settings:set', async (_e, patch: Partial<Settings>) => {

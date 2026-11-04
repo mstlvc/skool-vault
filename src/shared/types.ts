@@ -33,6 +33,8 @@ export interface Lesson {
   video?: VideoRef | null
   resources: Attachment[]
   posts?: string[] // community posts attached to the lesson (slugs), shown as post cards
+  rev?: number // version of the lesson handling that saved it ("only new" re-checks older ones)
+  videoMissing?: boolean // Skool referenced a video we couldn't get; retried on the next update
 }
 
 export interface Section {
@@ -149,10 +151,46 @@ export interface Settings {
   maxHeight: number // 0 = best available
 }
 
-export interface Account {
-  loggedIn: boolean
+/** How much of the disk the archive and the disposable cache are using. */
+export interface TempUsage {
+  libraryBytes: number
+  videoBytes: number
+  cacheBytes: number
+  leftoverBytes: number
+}
+
+export interface TempClearResult extends TempUsage {
+  freedBytes: number
+  /** Unfinished pieces were left because a download still has them open. */
+  keptLeftovers: boolean
+}
+
+/** One pass that removes the logged-in account's secrets from saved community folders. */
+export interface StripResult {
+  groups: number
+  filesChanged: number
+  cookiesRemoved: number
+  /** Files left untouched because a write would have changed a lesson, a post, or a video. */
+  kept: number
+  /** A download is still writing the library, so nothing was changed. */
+  busy: boolean
+}
+
+/** One saved Skool login, as the dashboard lists it. */
+export interface SavedAccount {
+  id: string
   name?: string
   avatar?: string | null
+  loggedIn: boolean
+  active: boolean
+}
+
+export interface Account {
+  loggedIn: boolean
+  id?: string
+  name?: string
+  avatar?: string | null
+  accounts: SavedAccount[]
 }
 
 export interface RemoteGroup {
@@ -174,6 +212,12 @@ export interface ScanCourse {
   locked: boolean
 }
 
+/** One block of a course outline, before anything is downloaded. An empty title is lessons with no section. */
+export interface ScanSection {
+  title: string
+  lessons: { id: string; title: string }[]
+}
+
 export interface ScanResult {
   group: RemoteGroup
   courses: ScanCourse[]
@@ -183,6 +227,7 @@ export interface ScanResult {
 export interface DownloadOptions {
   slug: string
   courses: string[] // course ids
+  skipLessons?: string[] // lesson ids to leave out; a copy already on disk is kept and not updated
   community: boolean
   comments: boolean
   videos: boolean
@@ -202,6 +247,7 @@ export interface JobState {
   id: string
   slug: string
   status: 'running' | 'done' | 'error' | 'cancelled'
+  paused?: boolean // running, but held until Resume
   phase: string
   current: string
   done: number

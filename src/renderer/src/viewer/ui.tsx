@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import type { Attachment, Person, Post, VideoRef } from '../../../shared/types'
+import { resolveSkoolHref } from '../../../shared/links'
+import type { Attachment, Course, Person, Post, VideoRef } from '../../../shared/types'
 import { API, embedPosts, go, initials, media, rewriteHtml } from './lib'
 
 // ---------------------------------------------------------------- icons
@@ -97,9 +98,20 @@ export function LightboxProvider({ children }: { children: ReactNode }) {
 }
 
 // ---------------------------------------------------------------- rich html
-export function Rich({ slug, html, className = '', posts }: { slug: string; html: string; className?: string; posts?: Post[] }) {
+export function Rich({
+  slug, html, className = '', posts, courses
+}: {
+  slug: string
+  html: string
+  className?: string
+  posts?: Post[]
+  courses?: Course[]
+}) {
   const lightbox = useLightbox()
-  const out = useMemo(() => embedPosts(rewriteHtml(slug, html || ''), slug, posts || []), [slug, html, posts])
+  const out = useMemo(
+    () => embedPosts(rewriteHtml(slug, html || ''), slug, posts || [], courses || []),
+    [slug, html, posts, courses]
+  )
   const onClick = (e: React.MouseEvent) => {
     const t = e.target as HTMLElement
     const embed = t.closest('[data-post]') as HTMLElement | null
@@ -129,18 +141,19 @@ export function ImageGrid({ slug, images }: { slug: string; images: string[] }) 
   )
 }
 
-export function Attachments({ slug, items }: { slug: string; items: Attachment[] }) {
+export function Attachments({ slug, items, posts, courses }: { slug: string; items: Attachment[]; posts?: Post[]; courses?: Course[] }) {
   if (!items.length) return null
   return (
     <div className="attachments">
       {items.map((a, i) => {
         const local = a.file ? media(slug, a.file) : null
-        const href = local || a.href || undefined
+        const jumped = !local && a.href ? resolveSkoolHref(a.href, slug, posts || [], courses || []) : null
+        const href = local || jumped?.hash || a.href || undefined
         return (
-          <a key={i} className="attachment" href={href} target="_blank" rel="noopener" download={local ? '' : undefined}>
+          <a key={i} className="attachment" href={href} target={local || jumped ? undefined : '_blank'} rel={local || jumped ? undefined : 'noopener'} download={local ? '' : undefined}>
             <Icon name={a.file ? 'file' : 'link'} />
             <span className="att-name">{a.name}</span>
-            {local ? <Icon name="download" size={16} className="muted" /> : <Icon name="external" size={16} className="muted" />}
+            {local ? <Icon name="download" size={16} className="muted" /> : jumped ? null : <Icon name="external" size={16} className="muted" />}
           </a>
         )
       })}
